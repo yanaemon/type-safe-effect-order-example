@@ -9,7 +9,8 @@
 //   - 状態 × 振る舞いが同じオブジェクトに乗る
 //   - IDE 補完が「今呼べるメソッドだけ」を出す
 //   - dispatcher は JS のメソッド呼び出しが担う → ライブラリ不要、runtime ゼロ
-//   - phantom field "_state" は declare で宣言 → JS には emit されない
+//   - phantom field "_state" は `declare` で「型だけ」の存在に
+//     (= コンパイル後の JS からは消える / pnpm diff:03 で実物が見られる)
 // =============================================================================
 class UserService {
     data;
