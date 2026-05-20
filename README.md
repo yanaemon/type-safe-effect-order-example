@@ -28,7 +28,7 @@ tsconfig.json              ← rootDir=src, outDir=compiled
 | 02 | `src/02-phantom-pipeline.ts` | 一次回答: Phantom Pipeline (値の型に「ラベル」を貼る) |
 | 03 | `src/03-type-state-pattern.ts` | 本旨: Type-State Pattern (クラスの型パラメータ + `this:` 制約) |
 | 04 | `src/04-type-state-interface-hide.ts` | 発展: interface + Omit で IDE 補完からも消す |
-| 05 | `src/05-runtime-fsm-limitation.ts` | 値ベース FSM と Type-State の比較。dispatcher の正体 |
+| 05 | `src/05-dispatcher-pattern.ts` | 対比: 値ベース FSM (素朴 + 型付き遷移表)。type-state との棲み分け |
 
 ### libraries/ — 特定ライブラリでの実装例
 
@@ -55,7 +55,7 @@ pnpm run:01         # 01-problem.ts を実行 (壊れた呼び出し例も含む
 pnpm run:02         # 02-phantom-pipeline.ts
 pnpm run:03         # 03-type-state-pattern.ts
 pnpm run:04         # 04-type-state-interface-hide.ts
-pnpm run:05         # 05-runtime-fsm-limitation.ts
+pnpm run:05         # 05-dispatcher-pattern.ts
 
 pnpm run:lib:effect         # libraries/effect.ts
 pnpm run:lib:xstate         # libraries/xstate.ts
@@ -71,7 +71,7 @@ pnpm diff:03        # src vs compiled の diff。型が erase される様子
 2. `02-phantom-pipeline.ts` — 値の型にラベルを貼る一次回答と、その限界
 3. `03-type-state-pattern.ts` — 状態 × 振る舞いをクラスに集約する本旨 (`this:` 制約)
 4. `04-type-state-interface-hide.ts` — interface + Omit で補完からも消す
-5. `05-runtime-fsm-limitation.ts` — 型だけで dispatcher を作れるか？の答え
+5. `05-dispatcher-pattern.ts` — 値ベース FSM (素朴 + 型付き遷移表) と type-state の棲み分け
 
 ## スライドの結論 (要約)
 
