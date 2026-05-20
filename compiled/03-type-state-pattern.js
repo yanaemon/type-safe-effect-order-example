@@ -23,24 +23,28 @@ class UserDataProcessor {
             return null;
         return new UserDataProcessor(this.data);
     }
-    save() {
+    async save() {
         console.log("[save]   ", this.data.name);
         return new UserDataProcessor(this.data);
     }
-    sendNotification() {
+    async sendNotification() {
         console.log("[notify] ", this.data.name);
     }
 }
 const input = { name: "test", age: 30 };
-// ----- ✅ 正しい順序: メソッドチェーンで自然に流れる -------------------------
+// ----- ✅ 正しい順序: 状態を進めながら await で繋ぐ ---------------------------
 const p = new UserDataProcessor(input);
-p.validate()?.save().sendNotification();
+const validated = p.validate();
+if (validated) {
+    const saved = await validated.save();
+    await saved.sendNotification();
+}
 // ----- ❌ 順序ミスは this 制約で止まる ---------------------------------------
-function _typeOnlyExamples() {
+async function _typeOnlyExamples() {
     // @ts-expect-error  validate をスキップ (this は UserDataProcessor<"draft">)
-    p.save();
+    await p.save();
     // @ts-expect-error  save をスキップ
-    p.validate().sendNotification();
+    await p.validate().sendNotification();
 }
 void _typeOnlyExamples;
 export {};

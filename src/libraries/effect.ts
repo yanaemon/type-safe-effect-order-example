@@ -31,10 +31,17 @@ type UserData = {
 };
 
 // エラーは値。例外を投げずに型で表現する。
-// (実プロダクションでは SaveError など段ごとに別タグの error を増やしていく)
 class ValidationError {
 	readonly _tag = "ValidationError";
 	constructor(readonly reason: string) {}
+}
+class SaveError {
+	readonly _tag = "SaveError";
+	constructor(readonly cause: unknown) {}
+}
+class NotifyError {
+	readonly _tag = "NotifyError";
+	constructor(readonly cause: unknown) {}
 }
 
 // -----------------------------------------------------------------------------
@@ -53,16 +60,23 @@ const validate = (input: UserData) =>
 		return input;
 	});
 
-// 副作用 (DB 書き込み相当) は Effect.sync / Effect.tryPromise で包む
+// async な副作用 (DB / 外部 API) は Effect.tryPromise で包むと、Promise rejection が
+// 型付き error に変換されてエフェクトの型に乗る (例外で抜けることはない)
 const save = (input: UserData) =>
-	Effect.sync(() => {
-		console.log("[save]   ", input.name);
-		return input;
+	Effect.tryPromise({
+		try: async () => {
+			console.log("[save]   ", input.name);
+			return input;
+		},
+		catch: (cause) => new SaveError(cause),
 	});
 
 const sendNotification = (input: UserData) =>
-	Effect.sync(() => {
-		console.log("[notify] ", input.name);
+	Effect.tryPromise({
+		try: async () => {
+			console.log("[notify] ", input.name);
+		},
+		catch: (cause) => new NotifyError(cause),
 	});
 
 // -----------------------------------------------------------------------------

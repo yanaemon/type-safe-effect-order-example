@@ -13,11 +13,11 @@ class UserService {
         console.log("[validate]", input.name);
         return input.name.length > 0 && input.age >= 0;
     }
-    save(input) {
+    async save(input) {
         console.log("[save]   ", input.name);
         // 本番なら DB に書き込む
     }
-    sendNotification(input) {
+    async sendNotification(input) {
         console.log("[notify] ", input.name);
         // 本番なら通知を送る
     }
@@ -27,15 +27,15 @@ const input = { name: "test", age: 30 };
 {
     const s = new UserService();
     s.validate(input);
-    s.save(input);
-    s.sendNotification(input);
+    await s.save(input);
+    await s.sendNotification(input);
 }
 // ----- ❌ 順序ミス: TS は通してしまう ----------------------------------------
+// async になっても引数の型が同じなので、順番を入れ替えてもコンパイルが通る。
 {
     const s = new UserService();
-    // 意図的に順序を間違えた呼び出し。型エラーにならない。
-    s.sendNotification(input); // 保存前に通知
-    s.save(input); // バリデーション前に保存
+    await s.sendNotification(input); // 保存前に通知
+    await s.save(input); // バリデーション前に保存
     s.validate(input); // 最後にバリデーション (もう遅い)
 }
 export {};

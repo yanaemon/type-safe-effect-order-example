@@ -51,8 +51,9 @@ class QueryBuilder<F extends QueryFlags = Empty> {
 		return new QueryBuilder<Ready>({ ...this.parts, columns });
 	}
 
-	// execute は Ready (= from + select) でないと呼べない
-	execute(this: QueryBuilder<Ready>): string {
+	// execute は Ready (= from + select) でないと呼べない。
+	// 本番では DB に投げるので async が自然 (返り値も Promise<Row[]> 等になる)
+	async execute(this: QueryBuilder<Ready>): Promise<string> {
 		const { table, columns, where } = this.parts;
 		const sql = `SELECT ${columns!.join(", ")} FROM ${table}${where ? ` WHERE ${where}` : ""}`;
 		console.log("[sql]", sql);
@@ -61,7 +62,7 @@ class QueryBuilder<F extends QueryFlags = Empty> {
 }
 
 // ----- ✅ 正しいチェーン ----------------------------------------------------
-QueryBuilder.create()
+await QueryBuilder.create()
 	.from("users")
 	.where("age >= 18")
 	.select("id", "email")

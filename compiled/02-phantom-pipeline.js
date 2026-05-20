@@ -20,11 +20,11 @@ class UserService {
         // ラベルを貼って返す。実体は同じオブジェクト
         return input;
     }
-    save(input) {
+    async save(input) {
         console.log("[save]   ", input.name);
         return input;
     }
-    sendNotification(input) {
+    async sendNotification(input) {
         console.log("[notify] ", input.name);
     }
 }
@@ -33,8 +33,8 @@ const s = new UserService();
 // ----- ✅ 正しい順序: validate → save → sendNotification ---------------------
 const validated = s.validate(input);
 if (validated) {
-    const saved = s.save(validated);
-    s.sendNotification(saved);
+    const saved = await s.save(validated);
+    await s.sendNotification(saved);
 }
 // ----- ❌ 順序ミスはコンパイル時に止まる -------------------------------------
 // 実行しないので関数に閉じ込める。型チェックのみで意図したエラーが出るかを確認する。

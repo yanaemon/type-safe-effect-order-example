@@ -35,29 +35,35 @@ class UserDataProcessor<S extends State = "draft"> {
 		return new UserDataProcessor<"validated">(this.data);
 	}
 
-	save(this: UserDataProcessor<"validated">): UserDataProcessor<"saved"> {
+	async save(
+		this: UserDataProcessor<"validated">,
+	): Promise<UserDataProcessor<"saved">> {
 		console.log("[save]   ", this.data.name);
 		return new UserDataProcessor<"saved">(this.data);
 	}
 
-	sendNotification(this: UserDataProcessor<"saved">): void {
+	async sendNotification(this: UserDataProcessor<"saved">): Promise<void> {
 		console.log("[notify] ", this.data.name);
 	}
 }
 
 const input: UserData = { name: "test", age: 30 };
 
-// ----- ✅ 正しい順序: メソッドチェーンで自然に流れる -------------------------
+// ----- ✅ 正しい順序: 状態を進めながら await で繋ぐ ---------------------------
 const p = new UserDataProcessor(input);
-p.validate()?.save().sendNotification();
+const validated = p.validate();
+if (validated) {
+	const saved = await validated.save();
+	await saved.sendNotification();
+}
 
 // ----- ❌ 順序ミスは this 制約で止まる ---------------------------------------
-function _typeOnlyExamples() {
+async function _typeOnlyExamples() {
 	// @ts-expect-error  validate をスキップ (this は UserDataProcessor<"draft">)
-	p.save();
+	await p.save();
 
 	// @ts-expect-error  save をスキップ
-	p.validate()!.sendNotification();
+	await p.validate()!.sendNotification();
 }
 void _typeOnlyExamples;
 

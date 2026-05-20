@@ -24,12 +24,25 @@
 // =============================================================================
 import { Effect, pipe } from "effect";
 // エラーは値。例外を投げずに型で表現する。
-// (実プロダクションでは SaveError など段ごとに別タグの error を増やしていく)
 class ValidationError {
     reason;
     _tag = "ValidationError";
     constructor(reason) {
         this.reason = reason;
+    }
+}
+class SaveError {
+    cause;
+    _tag = "SaveError";
+    constructor(cause) {
+        this.cause = cause;
+    }
+}
+class NotifyError {
+    cause;
+    _tag = "NotifyError";
+    constructor(cause) {
+        this.cause = cause;
     }
 }
 // -----------------------------------------------------------------------------
@@ -45,13 +58,20 @@ const validate = (input) => Effect.gen(function* () {
     }
     return input;
 });
-// 副作用 (DB 書き込み相当) は Effect.sync / Effect.tryPromise で包む
-const save = (input) => Effect.sync(() => {
-    console.log("[save]   ", input.name);
-    return input;
+// async な副作用 (DB / 外部 API) は Effect.tryPromise で包むと、Promise rejection が
+// 型付き error に変換されてエフェクトの型に乗る (例外で抜けることはない)
+const save = (input) => Effect.tryPromise({
+    try: async () => {
+        console.log("[save]   ", input.name);
+        return input;
+    },
+    catch: (cause) => new SaveError(cause),
 });
-const sendNotification = (input) => Effect.sync(() => {
-    console.log("[notify] ", input.name);
+const sendNotification = (input) => Effect.tryPromise({
+    try: async () => {
+        console.log("[notify] ", input.name);
+    },
+    catch: (cause) => new NotifyError(cause),
 });
 // -----------------------------------------------------------------------------
 // 合成: Effect.gen で逐次。前段が失敗するとそこで短絡する (例外なし)

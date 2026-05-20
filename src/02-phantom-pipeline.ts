@@ -35,12 +35,12 @@ class UserService {
 		return input as ValidatedUserData;
 	}
 
-	save(input: ValidatedUserData): SavedUserData {
+	async save(input: ValidatedUserData): Promise<SavedUserData> {
 		console.log("[save]   ", input.name);
 		return input as SavedUserData;
 	}
 
-	sendNotification(input: SavedUserData): void {
+	async sendNotification(input: SavedUserData): Promise<void> {
 		console.log("[notify] ", input.name);
 	}
 }
@@ -51,8 +51,8 @@ const s = new UserService();
 // ----- ✅ 正しい順序: validate → save → sendNotification ---------------------
 const validated = s.validate(input);
 if (validated) {
-	const saved = s.save(validated);
-	s.sendNotification(saved);
+	const saved = await s.save(validated);
+	await s.sendNotification(saved);
 }
 
 // ----- ❌ 順序ミスはコンパイル時に止まる -------------------------------------
