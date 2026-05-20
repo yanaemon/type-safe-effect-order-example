@@ -1,0 +1,15 @@
+compiled/04-type-state-interface-hide.js
+  ai_agent 2,5-6,8-16,18-22,24-26,28-31,33-35,37-38,41-58,60,63-67
+src/03-type-state-pattern.ts
+  ai_agent 81-86
+compiled/03-type-state-pattern.js
+  ai_agent 62-67
+src/04-type-state-interface-hide.ts
+  ai_agent 2,5-6,8-16,19-21,24-29,31-34,36-38,40-42,45-47,50-52,55-56,60,62-68,70-73,75-76,78-81,83,86-90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "c11763b92fb3cdb24dfe09f9a53b657ef763ce73",
+  "prompts": {}
+}
