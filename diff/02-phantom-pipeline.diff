@@ -1,0 +1,74 @@
+--- src/02-phantom-pipeline.ts	2026-05-21 00:16:03
++++ compiled/02-phantom-pipeline.js	2026-05-21 00:23:29
+@@ -12,63 +12,42 @@
+ //   - 「次に呼べるメソッド」を制限する仕組みはない (引数型で都度書くしかない)
+ //   - 値の流れに乗ってラベルが運ばれているだけで、振る舞いは集約されていない
+ // =============================================================================
+-
+-type UserData = {
+-    name: string;
+-    age: number;
+-};
+-
+-// Phantom Type の累積形。ブランドキーは値として存在しない (型だけ)。
+-// 注意: 同じキーを使う素直な書き方
+-//   type ValidatedUserData = UserData & { _state: "validated" };
+-//   type SavedUserData     = ValidatedUserData & { _state: "saved" };
+-// は _state の交差が "validated" & "saved" = never に潰れる。
+-// 累積させたいなら段ごとに別キーを足す (= 下のスタイル) が安全。
+-type ValidatedUserData = UserData & { readonly __validated: true };
+-type SavedUserData = ValidatedUserData & { readonly __saved: true };
+-
+ class UserService {
+     // null を返すことで「validate 失敗」を表現
+-    validate(input: UserData): ValidatedUserData | null {
++    validate(input) {
+         console.log("[validate]", input.name);
+         if (input.name.length === 0 || input.age < 0) {
+             return null;
+         }
+         // ラベルを貼って返す。実体は同じオブジェクト
+-        return input as ValidatedUserData;
++        return input;
+     }
+-
+-    async save(input: ValidatedUserData): Promise<SavedUserData> {
++    async save(input) {
+         console.log("[save]   ", input.name);
+-        return input as SavedUserData;
++        return input;
+     }
+-
+-    async notify(input: SavedUserData): Promise<void> {
++    async notify(input) {
+         console.log("[notify] ", input.name);
+     }
+ }
+-
+-const input: UserData = { name: "test", age: 30 };
++const input = { name: "test", age: 30 };
+ const s = new UserService();
+-
+ // ----- ✅ 正しい順序: validate → save → notify ---------------------
+ const validated = s.validate(input);
+ if (validated) {
+     const saved = await s.save(validated);
+     await s.notify(saved);
+ }
+-
+ // ----- ❌ 順序ミスはコンパイル時に止まる -------------------------------------
+ // 実行しないので関数に閉じ込める。型チェックのみで意図したエラーが出るかを確認する。
+ function _typeOnlyExamples() {
+     // @ts-expect-error  validate をスキップ (UserData は ValidatedUserData ではない)
+     s.save(input);
+-
+     // @ts-expect-error  save をスキップ (ValidatedUserData は SavedUserData ではない)
+-    s.notify(validated!);
++    s.notify(validated);
+ }
+ void _typeOnlyExamples;
+-
++export {};
+ // 結論:
+ //   ✅ ランタイムコスト 0 (型は erase される)
+ //   ✅ シグネチャに意図が出る

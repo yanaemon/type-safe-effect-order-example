@@ -1,0 +1,155 @@
+--- src/06-type-state-effect-hybrid.ts	2026-05-21 00:13:48
++++ compiled/06-type-state-effect-hybrid.js	2026-05-21 00:23:29
+@@ -18,35 +18,34 @@
+ //   ✅ エラーは Effect の型に乗る (例外を投げない)
+ //   ✅ 並行 / リトライ / タイムアウト / 依存注入は Effect の道具で書ける
+ // =============================================================================
+-
+ import { Effect, pipe } from "effect";
+-
+-type UserData = {
+-    name: string;
+-    age: number;
+-};
+-
+-type State = "draft" | "validated" | "saved";
+-
+ // エラーは値として宣言 (03 では `| null` だったところを型付きエラーに)
+ class ValidationError {
+-    readonly _tag = "ValidationError";
+-    constructor(readonly reason: string) {}
++    reason;
++    _tag = "ValidationError";
++    constructor(reason) {
++        this.reason = reason;
++    }
+ }
+ class SaveError {
+-    readonly _tag = "SaveError";
+-    constructor(readonly cause: unknown) {}
++    cause;
++    _tag = "SaveError";
++    constructor(cause) {
++        this.cause = cause;
++    }
+ }
+ class NotifyError {
+-    readonly _tag = "NotifyError";
+-    constructor(readonly cause: unknown) {}
++    cause;
++    _tag = "NotifyError";
++    constructor(cause) {
++        this.cause = cause;
++    }
+ }
+-
+-class UserService<S extends State = "draft"> {
+-    // phantom: 型だけのフィールド。コンパイル後の JS では消える
+-    private declare readonly _state: S;
+-    constructor(private readonly data: UserData) {}
+-
++class UserService {
++    data;
++    constructor(data) {
++        this.data = data;
++    }
+     // this: で状態を絞り、戻り値は Effect。失敗パスは Effect.fail に乗せる
+     //
+     // Effect の強みを活かすなら失敗条件ごとに別の ValidationError を返せる:
+@@ -54,25 +53,23 @@
+     //   if (this.data.age < 0)            return Effect.fail(new ValidationError("age is negative"));
+     // (= エラー型の値が「どこで失敗したか」を保持できる)
+     // このファイルでは他の例 (01-05) と統一して 1 つの check にまとめている。
+-    validate(this: UserService<"draft">): Effect.Effect<UserService<"validated">, ValidationError> {
++    validate() {
+         console.log("[validate]", this.data.name);
+         if (this.data.name.length === 0 || this.data.age < 0) {
+             return Effect.fail(new ValidationError("invalid input"));
+         }
+-        return Effect.succeed(new UserService<"validated">(this.data));
++        return Effect.succeed(new UserService(this.data));
+     }
+-
+-    save(this: UserService<"validated">): Effect.Effect<UserService<"saved">, SaveError> {
++    save() {
+         return Effect.tryPromise({
+             try: async () => {
+                 console.log("[save]   ", this.data.name);
+-                return new UserService<"saved">(this.data);
++                return new UserService(this.data);
+             },
+             catch: (cause) => new SaveError(cause),
+         });
+     }
+-
+-    notify(this: UserService<"saved">): Effect.Effect<void, NotifyError> {
++    notify() {
+         return Effect.tryPromise({
+             try: async () => {
+                 console.log("[notify] ", this.data.name);
+@@ -81,59 +78,38 @@
+         });
+     }
+ }
+-
+-const input: UserData = { name: "test", age: 30 };
+-
++const input = { name: "test", age: 30 };
+ // ----- ✅ pipe + flatMap でチェーン ------------------------------------------
+ const userService = new UserService(input);
+-const program = pipe(
+-    userService.validate(),
+-    Effect.flatMap((s) => s.save()),
+-    Effect.flatMap((s) => s.notify()),
+-);
+-
++const program = pipe(userService.validate(), Effect.flatMap((s) => s.save()), Effect.flatMap((s) => s.notify()));
+ console.log("--- pipe style ---");
+ await Effect.runPromise(program);
+-
+ // ----- Effect.gen 流でも書ける -----------------------------------------------
+ const programGen = Effect.gen(function* () {
+     const validated = yield* new UserService(input).validate();
+     const saved = yield* validated.save();
+     yield* saved.notify();
+ });
+-
+ console.log("--- gen style (同じ結果) ---");
+ await Effect.runPromise(programGen);
+-
+ // ----- 失敗ケース: 例外ではなく Effect の Exit に Failure として現れる --------
+ console.log("--- failure ---");
+-const failedProgram = pipe(
+-    new UserService({ name: "", age: 30 }).validate(),
+-    Effect.flatMap((s) => s.save()),
+-    Effect.flatMap((s) => s.notify()),
+-);
++const failedProgram = pipe(new UserService({ name: "", age: 30 }).validate(), Effect.flatMap((s) => s.save()), Effect.flatMap((s) => s.notify()));
+ const exit = await Effect.runPromiseExit(failedProgram);
+ console.log("[exit]   ", exit._tag); // "Failure"
+-
+ // ----- ❌ 順序ミスは type-state で compile-time に止まる ----------------------
+ function _typeOnlyExamples() {
+     const u = new UserService(input);
+-
+     // @ts-expect-error  validate をスキップ (u は UserService<"draft">)
+     u.save();
+-
+     // @ts-expect-error  validate をスキップして notify
+     u.notify();
+-
+     // pipe の中でも同じ。validated に対して notify は呼べない
+-    pipe(
+-        u.validate(),
+-        // @ts-expect-error  save をスキップして notify (s は UserService<"validated">)
+-        Effect.flatMap((s) => s.notify()),
+-    );
++    pipe(u.validate(), 
++    // @ts-expect-error  save をスキップして notify (s は UserService<"validated">)
++    Effect.flatMap((s) => s.notify()));
+ }
+ void _typeOnlyExamples;
+-
+ // -----------------------------------------------------------------------------
+ // 役割分担まとめ
+ // -----------------------------------------------------------------------------

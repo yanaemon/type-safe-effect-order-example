@@ -5,7 +5,7 @@
     "description": "Example code for TSKaigi 2026: TypeScript の型で副作用の実行順序を制御する",
     "type": "module",
     "scripts": {
-        "build": "tsc",
+        "build": "tsc && pnpm diff:gen",
         "clean": "rm -rf compiled",
         "typecheck": "tsc --noEmit",
         "format": "biome format --write",
@@ -20,12 +20,7 @@
         "run:lib:xstate": "tsx src/libraries/xstate.ts",
         "run:lib:typestate": "tsx src/libraries/typestate.ts",
         "run:lib:ts-checked-fsm": "tsx src/libraries/ts-checked-fsm.ts",
-        "diff:01": "diff -u src/01-problem.ts compiled/01-problem.js || true",
-        "diff:02": "diff -u src/02-phantom-pipeline.ts compiled/02-phantom-pipeline.js || true",
-        "diff:03": "diff -u src/03-type-state-pattern.ts compiled/03-type-state-pattern.js || true",
-        "diff:04": "diff -u src/04-type-state-interface-hide.ts compiled/04-type-state-interface-hide.js || true",
-        "diff:05": "diff -u src/05-dispatcher-pattern.ts compiled/05-dispatcher-pattern.js || true",
-        "diff:06": "diff -u src/06-type-state-effect-hybrid.ts compiled/06-type-state-effect-hybrid.js || true"
+        "diff:gen": "for ts in src/[0-9]*-*.ts; do n=$(basename $ts .ts); diff -u $ts compiled/$n.js > diff/$n.diff || true; done"
     },
     "devDependencies": {
         "tsx": "^4.19.2",

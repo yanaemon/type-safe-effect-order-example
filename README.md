@@ -6,17 +6,18 @@ TSKaigi 2026「TypeScript の型で副作用の実行順序を制御する」の
 ## Layout
 
 ```
-src/
-├── 01-..06-...ts          ← 本編 (この順で読む)
+src/                       ← 本編 (この順で読む)
+├── 01-..06-...ts
 └── libraries/             ← 特定ライブラリでの実装例 (読み順は任意)
-    └── effect.ts
 compiled/                  ← tsc 出力。src と同じ階層で .js が出る
+diff/                      ← src vs compiled の差分スナップショット (GitHub で読める)
 tsconfig.json              ← rootDir=src, outDir=compiled
 ```
 
-`src/` の各ファイルと `compiled/` の同名 `.js` を `diff` すると、型注釈・
-`declare private readonly _state: S` などが綺麗に消えることが確認できる。
-スライドの「ランタイムコスト 0 (型は erase される)」の物的証拠。
+`src/` の各ファイルと `compiled/` の同名 `.js` の差分は [diff/](diff/) に
+スナップショットしてあり、型注釈や `declare private readonly _state: S` などが
+綺麗に消えていることが確認できる。スライドの「ランタイムコスト 0 (型は erase
+される)」の物的証拠。差分は `pnpm build` (= `tsc && diff:gen`) で再生成。
 
 ## Files
 
@@ -64,13 +65,12 @@ pnpm run:lib:xstate         # libraries/xstate.ts
 pnpm run:lib:typestate      # libraries/typestate.ts
 pnpm run:lib:ts-checked-fsm # libraries/ts-checked-fsm.ts
 
-pnpm diff:01        # src vs compiled の diff。型が erase される様子
-pnpm diff:02        # (diff:01..06 まで揃っている)
-pnpm diff:03
-pnpm diff:04
-pnpm diff:05
-pnpm diff:06
+pnpm diff:gen       # diff/ に src vs compiled の差分スナップショットを再生成
+                    # (pnpm build に含まれているので普段は意識しなくて OK)
 ```
+
+差分は [diff/](diff/) ディレクトリで直接読める (GitHub なら diff の syntax
+highlight 付きで表示される)。
 
 ## 読み順
 
