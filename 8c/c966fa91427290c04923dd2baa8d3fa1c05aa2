@@ -1,0 +1,21 @@
+compiled/libraries/ts-checked-fsm.js
+  ai_agent 1-150
+README.md
+  ai_agent 37-40,60-63
+compiled/libraries/typestate.js
+  ai_agent 1-105
+package-lock.json
+  ai_agent 12-13,574-579,613-617
+package.json
+  ai_agent 18-19,30-31
+src/libraries/ts-checked-fsm.ts
+  ai_agent 1-189
+src/libraries/typestate.ts
+  ai_agent 1-129
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "8cc966fa91427290c04923dd2baa8d3fa1c05aa2",
+  "prompts": {}
+}
