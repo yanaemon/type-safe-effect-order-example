@@ -6,9 +6,12 @@ TSKaigi 2026「TypeScript の型で副作用の実行順序を制御する」の
 ## Layout
 
 ```
-src/           ← TypeScript ソース (ここを読むのが本体)
-compiled/      ← tsc 出力。「型は erase される」を目で確認するための比較用
-tsconfig.json  ← rootDir=src, outDir=compiled
+src/
+├── 01-..05-...ts          ← 本編 (この順で読む)
+└── libraries/             ← 特定ライブラリでの実装例 (読み順は任意)
+    └── effect.ts
+compiled/                  ← tsc 出力。src と同じ階層で .js が出る
+tsconfig.json              ← rootDir=src, outDir=compiled
 ```
 
 `src/` の各ファイルと `compiled/` の同名 `.js` を `diff` すると、型注釈・
@@ -17,6 +20,8 @@ tsconfig.json  ← rootDir=src, outDir=compiled
 
 ## Files
 
+### 本編 (順番に読む)
+
 | # | ファイル | 主題 |
 |---|---|---|
 | 01 | `src/01-problem.ts` | 問題提起。引数が同じ型なら TS は順序ミスを通してしまう |
@@ -24,6 +29,12 @@ tsconfig.json  ← rootDir=src, outDir=compiled
 | 03 | `src/03-type-state-pattern.ts` | 本旨: Type-State Pattern (クラスの型パラメータに状態) |
 | 04 | `src/04-type-state-query-builder.ts` | 応用: Query Builder で見る業界の "正解" |
 | 05 | `src/05-runtime-fsm-limitation.ts` | 値ベース FSM と Type-State の比較。dispatcher の正体 |
+
+### libraries/ — 特定ライブラリでの実装例
+
+| ライブラリ | ファイル | 主題 |
+|---|---|---|
+| Effect.ts | `src/libraries/effect.ts` | エフェクトを値として扱う流派。順序は型ではなくデータ依存で表現 |
 
 各ファイルには `@ts-expect-error` 付きの「これは型エラーになる」例も入っている。
 `pnpm typecheck` (or `npm run typecheck`) すれば、`@ts-expect-error` がちゃんと
@@ -42,6 +53,8 @@ pnpm run:02         # 02-phantom-pipeline.ts
 pnpm run:03         # 03-type-state-pattern.ts
 pnpm run:04         # 04-type-state-query-builder.ts
 pnpm run:05         # 05-runtime-fsm-limitation.ts
+
+pnpm run:lib:effect # libraries/effect.ts
 
 pnpm diff:03        # src vs compiled の diff。型が erase される様子
 ```
