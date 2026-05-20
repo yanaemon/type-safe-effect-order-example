@@ -5,8 +5,8 @@
 // 03-type-state-pattern.ts は `this:` 制約で「呼ぶと型エラー」までは作れたが、
 // IDE 補完にはまだメソッドが出てしまう (= 呼べないのに見えてしまう)。
 //
-// Kysely / Drizzle 流: 実装は class、API として出す戻り値の型は interface に
-// する。interface 上で `Omit` すれば、private フィールドを巻き込まずに
+// 解決: 実装は class、API として出す戻り値の型は interface にする。
+// interface 上で `Omit` すれば、private フィールドを巻き込まずに
 // 「その状態で呼べるメソッドだけ」を型に残せる (= 補完にも出ない)。
 //
 // 効くポイント:
@@ -85,6 +85,5 @@ void _typeOnlyExamples;
 // 結論:
 //   - 「実装 = class、API = interface」と分けると、Omit で状態を絞れる
 //   - private フィールドが interface 越しに見えないので、Omit が壊れない
-//   - これが Kysely (`SelectQueryBuilder`) や Drizzle のチェーン API の中身
 //   - 03 (this: 制約) は呼ぶと型エラー、04 (interface 版) は補完にも出ない
 //     → 厳しさで言うと interface 版の方が強い

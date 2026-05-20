@@ -62,6 +62,6 @@ export {};
 // この方式の限界:
 //   `this:` 制約は「呼ぶと型エラー」止まりで、IDE 補完にはメソッドが出る。
 //   補完からも消したい (= そもそも呼べなくしたい) なら:
-//   → 04-type-state-interface-hide.ts (Kysely / Drizzle 流: interface + Omit)
+//   → 04-type-state-interface-hide.ts (interface + Omit でメソッドを型から消す)
 //
 // 次: 04-type-state-interface-hide.ts で interface ベースの hide を見る

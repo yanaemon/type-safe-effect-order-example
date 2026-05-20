@@ -11,7 +11,7 @@
     "run:01": "tsx src/01-problem.ts",
     "run:02": "tsx src/02-phantom-pipeline.ts",
     "run:03": "tsx src/03-type-state-pattern.ts",
-    "run:04": "tsx src/04-type-state-query-builder.ts",
+    "run:04": "tsx src/04-type-state-interface-hide.ts",
     "run:05": "tsx src/05-runtime-fsm-limitation.ts",
     "run:lib:effect": "tsx src/libraries/effect.ts",
     "run:lib:xstate": "tsx src/libraries/xstate.ts",
