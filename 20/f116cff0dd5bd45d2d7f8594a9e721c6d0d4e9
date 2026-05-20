@@ -1,0 +1,17 @@
+README.md
+  ai_agent 9-14,23-24,33-38,57
+package-lock.json
+  ai_agent 10-12,460-475,518-539,555-569
+package.json
+  ai_agent 16,24-26
+compiled/libraries/effect.js
+  ai_agent 1-101
+src/libraries/effect.ts
+  ai_agent 1-124
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "20f116cff0dd5bd45d2d7f8594a9e721c6d0d4e9",
+  "prompts": {}
+}
