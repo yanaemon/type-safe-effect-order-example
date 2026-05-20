@@ -11,7 +11,7 @@
 //   - dispatcher は JS のメソッド呼び出しが担う → ライブラリ不要、runtime ゼロ
 //   - phantom field "_state" は declare で宣言 → JS には emit されない
 // =============================================================================
-class UserDataProcessor {
+class UserService {
     data;
     constructor(data) {
         this.data = data;
@@ -21,11 +21,11 @@ class UserDataProcessor {
     validate() {
         if (this.data.name.length === 0 || this.data.age < 0)
             return null;
-        return new UserDataProcessor(this.data);
+        return new UserService(this.data);
     }
     async save() {
         console.log("[save]   ", this.data.name);
-        return new UserDataProcessor(this.data);
+        return new UserService(this.data);
     }
     async notify() {
         console.log("[notify] ", this.data.name);
@@ -33,7 +33,7 @@ class UserDataProcessor {
 }
 const input = { name: "test", age: 30 };
 // ----- ✅ 正しい順序: 状態を進めながら await で繋ぐ ---------------------------
-const p = new UserDataProcessor(input);
+const p = new UserService(input);
 const validated = p.validate();
 if (validated) {
     const saved = await validated.save();
@@ -41,7 +41,7 @@ if (validated) {
 }
 // ----- ❌ 順序ミスは this 制約で止まる ---------------------------------------
 async function _typeOnlyExamples() {
-    // @ts-expect-error  validate をスキップ (this は UserDataProcessor<"draft">)
+    // @ts-expect-error  validate をスキップ (this は UserService<"draft">)
     await p.save();
     // @ts-expect-error  save をスキップ
     await p.validate().notify();

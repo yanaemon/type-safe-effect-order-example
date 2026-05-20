@@ -22,24 +22,24 @@ type UserData = {
 };
 
 // 全メソッドを一度 interface に並べて、各状態は Omit で削るベース。
-interface UserDataProcessorIF {
-	validate(): Omit<UserDataProcessorIF, "validate" | "notify"> | null;
-	save(): Promise<Omit<UserDataProcessorIF, "validate" | "save">>;
+interface UserServiceIF {
+	validate(): Omit<UserServiceIF, "validate" | "notify"> | null;
+	save(): Promise<Omit<UserServiceIF, "validate" | "save">>;
 	notify(): Promise<void>;
 }
 
 // 状態ごとの「見える型」 (可読性のため別名を付ける)
-type Draft = Omit<UserDataProcessorIF, "save" | "notify">;
-type Validated = Omit<UserDataProcessorIF, "validate" | "notify">;
-type Saved = Omit<UserDataProcessorIF, "validate" | "save">;
+type Draft = Omit<UserServiceIF, "save" | "notify">;
+type Validated = Omit<UserServiceIF, "validate" | "notify">;
+type Saved = Omit<UserServiceIF, "validate" | "save">;
 
-class UserDataProcessor implements UserDataProcessorIF {
+class UserService implements UserServiceIF {
 	// new で直接作らせない: create() 経由でしか入れない
 	private constructor(private readonly data: UserData) {}
 
 	// 初期状態は Draft のみ公開 (validate しか呼べない)
 	static create(data: UserData): Draft {
-		return new UserDataProcessor(data);
+		return new UserService(data);
 	}
 
 	validate(): Validated | null {
@@ -60,7 +60,7 @@ class UserDataProcessor implements UserDataProcessorIF {
 const input: UserData = { name: "test", age: 30 };
 
 // ----- ✅ 正しい順序: 状態を進めながら await で繋ぐ ---------------------------
-const p = UserDataProcessor.create(input);
+const p = UserService.create(input);
 const validated = p.validate();
 if (validated) {
 	const saved = await validated.save();

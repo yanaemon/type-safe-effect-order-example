@@ -15,7 +15,7 @@
 //   - `private constructor` + `static create(): Draft` で初期状態を強制
 //   - 03 の phantom field / 型パラメータ default が不要になる
 // =============================================================================
-class UserDataProcessor {
+class UserService {
     data;
     // new で直接作らせない: create() 経由でしか入れない
     constructor(data) {
@@ -23,7 +23,7 @@ class UserDataProcessor {
     }
     // 初期状態は Draft のみ公開 (validate しか呼べない)
     static create(data) {
-        return new UserDataProcessor(data);
+        return new UserService(data);
     }
     validate() {
         if (this.data.name.length === 0 || this.data.age < 0)
@@ -40,7 +40,7 @@ class UserDataProcessor {
 }
 const input = { name: "test", age: 30 };
 // ----- ✅ 正しい順序: 状態を進めながら await で繋ぐ ---------------------------
-const p = UserDataProcessor.create(input);
+const p = UserService.create(input);
 const validated = p.validate();
 if (validated) {
     const saved = await validated.save();

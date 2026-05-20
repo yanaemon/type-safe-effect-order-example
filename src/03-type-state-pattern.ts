@@ -19,7 +19,7 @@ type UserData = {
 
 type State = "draft" | "validated" | "saved";
 
-class UserDataProcessor<S extends State = "draft"> {
+class UserService<S extends State = "draft"> {
 	// phantom: 構造的型付けで <"draft"> と <"validated"> を区別するためだけに存在。
 	// `declare` で宣言すると JS には emit されない (本当に型だけ)
 	private declare readonly _state: S;
@@ -28,21 +28,17 @@ class UserDataProcessor<S extends State = "draft"> {
 
 	// this の型で「呼び出し可能な状態」を制約する。
 	// 戻り値の型で「呼び出し後の状態」を表現する。
-	validate(
-		this: UserDataProcessor<"draft">,
-	): UserDataProcessor<"validated"> | null {
+	validate(this: UserService<"draft">): UserService<"validated"> | null {
 		if (this.data.name.length === 0 || this.data.age < 0) return null;
-		return new UserDataProcessor<"validated">(this.data);
+		return new UserService<"validated">(this.data);
 	}
 
-	async save(
-		this: UserDataProcessor<"validated">,
-	): Promise<UserDataProcessor<"saved">> {
+	async save(this: UserService<"validated">): Promise<UserService<"saved">> {
 		console.log("[save]   ", this.data.name);
-		return new UserDataProcessor<"saved">(this.data);
+		return new UserService<"saved">(this.data);
 	}
 
-	async notify(this: UserDataProcessor<"saved">): Promise<void> {
+	async notify(this: UserService<"saved">): Promise<void> {
 		console.log("[notify] ", this.data.name);
 	}
 }
@@ -50,7 +46,7 @@ class UserDataProcessor<S extends State = "draft"> {
 const input: UserData = { name: "test", age: 30 };
 
 // ----- ✅ 正しい順序: 状態を進めながら await で繋ぐ ---------------------------
-const p = new UserDataProcessor(input);
+const p = new UserService(input);
 const validated = p.validate();
 if (validated) {
 	const saved = await validated.save();
@@ -59,7 +55,7 @@ if (validated) {
 
 // ----- ❌ 順序ミスは this 制約で止まる ---------------------------------------
 async function _typeOnlyExamples() {
-	// @ts-expect-error  validate をスキップ (this は UserDataProcessor<"draft">)
+	// @ts-expect-error  validate をスキップ (this は UserService<"draft">)
 	await p.save();
 
 	// @ts-expect-error  save をスキップ
