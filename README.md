@@ -24,21 +24,21 @@ tsconfig.json              ← rootDir=src, outDir=compiled
 
 | # | ファイル | 主題 |
 |---|---|---|
-| 01 | `src/01-problem.ts` | 問題提起。引数が同じ型なら TS は順序ミスを通してしまう |
-| 02 | `src/02-phantom-pipeline.ts` | 一次回答: Phantom Pipeline (値の型に「ラベル」を貼る) |
-| 03 | `src/03-type-state-pattern.ts` | 本旨: Type-State Pattern (クラスの型パラメータ + `this:` 制約) |
-| 04 | `src/04-type-state-interface-hide.ts` | 発展: interface + Omit で IDE 補完からも消す |
-| 05 | `src/05-dispatcher-pattern.ts` | 対比: 値ベース FSM (素朴 + 型付き遷移表)。type-state との棲み分け |
-| 06 | `src/06-type-state-effect-hybrid.ts` | 応用: Type-State × Effect ハイブリッド。順序は型、エラー / 並行は Effect |
+| 01 | [`src/01-problem.ts`](src/01-problem.ts) | 問題提起。引数が同じ型なら TS は順序ミスを通してしまう |
+| 02 | [`src/02-phantom-pipeline.ts`](src/02-phantom-pipeline.ts) | 一次回答: Phantom Pipeline (値の型に「ラベル」を貼る) |
+| 03 | [`src/03-type-state-pattern.ts`](src/03-type-state-pattern.ts) | 本旨: Type-State Pattern (クラスの型パラメータ + `this:` 制約) |
+| 04 | [`src/04-type-state-interface-hide.ts`](src/04-type-state-interface-hide.ts) | 発展: interface + Omit で IDE 補完からも消す |
+| 05 | [`src/05-dispatcher-pattern.ts`](src/05-dispatcher-pattern.ts) | 対比: 値ベース FSM (素朴 + 型付き遷移表)。type-state との棲み分け |
+| 06 | [`src/06-type-state-effect-hybrid.ts`](src/06-type-state-effect-hybrid.ts) | 応用: Type-State × Effect ハイブリッド。順序は型、エラー / 並行は Effect |
 
 ### libraries/ — 特定ライブラリでの実装例
 
 | ライブラリ | ファイル | 主題 |
 |---|---|---|
-| Effect.ts      | `src/libraries/effect.ts`         | エフェクトを値として扱う流派。順序は型ではなくデータ依存で表現 |
-| xstate         | `src/libraries/xstate.ts`         | runtime の状態機械で順序を守る流派。不正遷移は no-op |
-| typestate      | `src/libraries/typestate.ts`      | 軽量 runtime FSM。不正遷移は throw (xstate の no-op と対照的) |
-| ts-checked-fsm | `src/libraries/ts-checked-fsm.ts` | FSM 定義そのものを compile-time で検証する。runtime dispatch は no-op |
+| Effect.ts      | [`src/libraries/effect.ts`](src/libraries/effect.ts)                 | エフェクトを値として扱う流派。順序は型ではなくデータ依存で表現 |
+| xstate         | [`src/libraries/xstate.ts`](src/libraries/xstate.ts)                 | runtime の状態機械で順序を守る流派。不正遷移は no-op |
+| typestate      | [`src/libraries/typestate.ts`](src/libraries/typestate.ts)           | 軽量 runtime FSM。不正遷移は throw (xstate の no-op と対照的) |
+| ts-checked-fsm | [`src/libraries/ts-checked-fsm.ts`](src/libraries/ts-checked-fsm.ts) | FSM 定義そのものを compile-time で検証する。runtime dispatch は no-op |
 
 各ファイルには `@ts-expect-error` 付きの「これは型エラーになる」例も入っている。
 `pnpm typecheck` (or `npm run typecheck`) すれば、`@ts-expect-error` がちゃんと
@@ -69,12 +69,12 @@ pnpm diff:03        # src vs compiled の diff。型が erase される様子
 
 ## 読み順
 
-1. `01-problem.ts` — 何が困るのか
-2. `02-phantom-pipeline.ts` — 値の型にラベルを貼る一次回答と、その限界
-3. `03-type-state-pattern.ts` — 状態 × 振る舞いをクラスに集約する本旨 (`this:` 制約)
-4. `04-type-state-interface-hide.ts` — interface + Omit で補完からも消す
-5. `05-dispatcher-pattern.ts` — 値ベース FSM (素朴 + 型付き遷移表) と type-state の棲み分け
-6. `06-type-state-effect-hybrid.ts` — 順序は type-state、エラー / 並行は Effect
+1. [`01-problem.ts`](src/01-problem.ts) — 何が困るのか
+2. [`02-phantom-pipeline.ts`](src/02-phantom-pipeline.ts) — 値の型にラベルを貼る一次回答と、その限界
+3. [`03-type-state-pattern.ts`](src/03-type-state-pattern.ts) — 状態 × 振る舞いをクラスに集約する本旨 (`this:` 制約)
+4. [`04-type-state-interface-hide.ts`](src/04-type-state-interface-hide.ts) — interface + Omit で補完からも消す
+5. [`05-dispatcher-pattern.ts`](src/05-dispatcher-pattern.ts) — 値ベース FSM (素朴 + 型付き遷移表) と type-state の棲み分け
+6. [`06-type-state-effect-hybrid.ts`](src/06-type-state-effect-hybrid.ts) — 順序は type-state、エラー / 並行は Effect
 
 ## スライドの結論 (要約)
 
