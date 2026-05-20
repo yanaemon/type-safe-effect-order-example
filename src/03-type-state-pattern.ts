@@ -78,4 +78,9 @@ void _typeOnlyExamples;
 //   - API クライアントの context chain: 認証や middleware の有無を型で持つ
 //   - DB / Cache driver: Connection の接続状態を型パラメータで表現
 //
-// 次: 04-type-state-query-builder.ts で Query Builder 風の応用例を見る
+// この方式の限界:
+//   `this:` 制約は「呼ぶと型エラー」止まりで、IDE 補完にはメソッドが出る。
+//   補完からも消したい (= そもそも呼べなくしたい) なら:
+//   → 04-type-state-interface-hide.ts (Kysely / Drizzle 流: interface + Omit)
+//
+// 次: 04-type-state-interface-hide.ts で interface ベースの hide を見る
