@@ -35,6 +35,7 @@ tsconfig.json              ← rootDir=src, outDir=compiled
 | ライブラリ | ファイル | 主題 |
 |---|---|---|
 | Effect.ts | `src/libraries/effect.ts` | エフェクトを値として扱う流派。順序は型ではなくデータ依存で表現 |
+| xstate    | `src/libraries/xstate.ts` | runtime の状態機械で順序を守る流派。不正遷移は no-op |
 
 各ファイルには `@ts-expect-error` 付きの「これは型エラーになる」例も入っている。
 `pnpm typecheck` (or `npm run typecheck`) すれば、`@ts-expect-error` がちゃんと
@@ -55,6 +56,7 @@ pnpm run:04         # 04-type-state-query-builder.ts
 pnpm run:05         # 05-runtime-fsm-limitation.ts
 
 pnpm run:lib:effect # libraries/effect.ts
+pnpm run:lib:xstate # libraries/xstate.ts
 
 pnpm diff:03        # src vs compiled の diff。型が erase される様子
 ```

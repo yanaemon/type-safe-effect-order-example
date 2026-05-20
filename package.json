@@ -14,6 +14,7 @@
     "run:04": "tsx src/04-type-state-query-builder.ts",
     "run:05": "tsx src/05-runtime-fsm-limitation.ts",
     "run:lib:effect": "tsx src/libraries/effect.ts",
+    "run:lib:xstate": "tsx src/libraries/xstate.ts",
     "diff:01": "diff -u src/01-problem.ts compiled/01-problem.js || true",
     "diff:02": "diff -u src/02-phantom-pipeline.ts compiled/02-phantom-pipeline.js || true",
     "diff:03": "diff -u src/03-type-state-pattern.ts compiled/03-type-state-pattern.js || true"
@@ -23,6 +24,7 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
-    "effect": "^3.21.2"
+    "effect": "^3.21.2",
+    "xstate": "^5.31.1"
   }
 }
