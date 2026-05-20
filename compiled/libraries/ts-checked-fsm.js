@@ -45,10 +45,11 @@ const { nextState } = stateMachine()
     .action("NOTIFY")
     // ハンドラの戻り値が「宣言された遷移先 state」でないとコンパイルエラー
     .actionHandler("draft", "VALIDATE", (_state, action) => {
-    if (action.input.name.length > 0 && action.input.age >= 0) {
-        return { stateName: "validated" };
+    console.log("[validate]", action.input.name);
+    if (action.input.name.length === 0 || action.input.age < 0) {
+        return { stateName: "invalid" };
     }
-    return { stateName: "invalid" };
+    return { stateName: "validated" };
 })
     .actionHandler("validated", "SAVE", (_state, _action) => ({ stateName: "saved" }))
     .actionHandler("saved", "NOTIFY", (_state, _action) => ({ stateName: "notified" }))

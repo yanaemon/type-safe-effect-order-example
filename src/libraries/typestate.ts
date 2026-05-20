@@ -70,7 +70,8 @@ console.log("--- happy path ---");
 	const fsm = createFsm();
 
 	// validate は同期チェック → go(Validated)
-	if (input.name.length > 0 && input.age >= 0) {
+	console.log("[validate]", input.name);
+	if (!(input.name.length === 0 || input.age < 0)) {
 		fsm.go(UserState.Validated);
 	}
 

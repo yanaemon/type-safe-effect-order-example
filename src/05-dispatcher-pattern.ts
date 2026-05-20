@@ -96,6 +96,10 @@ async function _dispatchTyped(
 	event: { type: string },
 ): Promise<TypedState> {
 	if (state.kind === "draft" && event.type === "VALIDATE") {
+		console.log("[validate]", state.data.name);
+		if (state.data.name.length === 0 || state.data.age < 0) {
+			throw new Error("validation failed");
+		}
 		return { kind: "validated", data: state.data };
 	}
 	if (state.kind === "validated" && event.type === "SAVE") {

@@ -51,11 +51,9 @@ class NotifyError {
 // 失敗しうる純粋なチェック → Effect.fail で型に乗せる
 const validate = (input: UserData) =>
 	Effect.gen(function* () {
-		if (input.name.length === 0) {
-			return yield* Effect.fail(new ValidationError("name is empty"));
-		}
-		if (input.age < 0) {
-			return yield* Effect.fail(new ValidationError("age is negative"));
+		console.log("[validate]", input.name);
+		if (input.name.length === 0 || input.age < 0) {
+			return yield* Effect.fail(new ValidationError("invalid input"));
 		}
 		return input;
 	});

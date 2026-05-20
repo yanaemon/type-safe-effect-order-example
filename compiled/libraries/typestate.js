@@ -55,7 +55,8 @@ console.log("--- happy path ---");
     const input = { name: "test", age: 30 };
     const fsm = createFsm();
     // validate は同期チェック → go(Validated)
-    if (input.name.length > 0 && input.age >= 0) {
+    console.log("[validate]", input.name);
+    if (!(input.name.length === 0 || input.age < 0)) {
         fsm.go(UserState.Validated);
     }
     // 副作用は外で await し、終わったら go() で状態を進める

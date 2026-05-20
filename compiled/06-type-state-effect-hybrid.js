@@ -47,12 +47,16 @@ class UserService {
         this.data = data;
     }
     // this: で状態を絞り、戻り値は Effect。失敗パスは Effect.fail に乗せる
+    //
+    // Effect の強みを活かすなら失敗条件ごとに別の ValidationError を返せる:
+    //   if (this.data.name.length === 0) return Effect.fail(new ValidationError("name is empty"));
+    //   if (this.data.age < 0)            return Effect.fail(new ValidationError("age is negative"));
+    // (= エラー型の値が「どこで失敗したか」を保持できる)
+    // このファイルでは他の例 (01-05) と統一して 1 つの check にまとめている。
     validate() {
-        if (this.data.name.length === 0) {
-            return Effect.fail(new ValidationError("name is empty"));
-        }
-        if (this.data.age < 0) {
-            return Effect.fail(new ValidationError("age is negative"));
+        console.log("[validate]", this.data.name);
+        if (this.data.name.length === 0 || this.data.age < 0) {
+            return Effect.fail(new ValidationError("invalid input"));
         }
         return Effect.succeed(new UserService(this.data));
     }

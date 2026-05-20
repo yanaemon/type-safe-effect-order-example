@@ -41,7 +41,10 @@ const userMachine = setup({
         }),
     },
     guards: {
-        isValid: ({ context }) => context.input.name.length > 0 && context.input.age >= 0,
+        isValid: ({ context }) => {
+            console.log("[validate]", context.input.name);
+            return !(context.input.name.length === 0 || context.input.age < 0);
+        },
     },
 }).createMachine({
     initial: "draft",
