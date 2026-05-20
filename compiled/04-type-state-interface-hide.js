@@ -34,7 +34,7 @@ class UserDataProcessor {
         console.log("[save]   ", this.data.name);
         return this;
     }
-    async sendNotification() {
+    async notify() {
         console.log("[notify] ", this.data.name);
     }
 }
@@ -44,14 +44,14 @@ const p = UserDataProcessor.create(input);
 const validated = p.validate();
 if (validated) {
     const saved = await validated.save();
-    await saved.sendNotification();
+    await saved.notify();
 }
 // ----- ❌ 順序ミスは「型から消えている」のでそもそも補完に出ない -------------
 async function _typeOnlyExamples() {
     // @ts-expect-error  Draft には save が無い (型から消えている)
     await p.save();
-    // @ts-expect-error  Validated には sendNotification が無い
-    await p.validate().sendNotification();
+    // @ts-expect-error  Validated には notify が無い
+    await p.validate().notify();
     const v = p.validate();
     const s = await v.save();
     // @ts-expect-error  Saved には save が無い

@@ -40,7 +40,7 @@ class UserService {
 		return input as SavedUserData;
 	}
 
-	async sendNotification(input: SavedUserData): Promise<void> {
+	async notify(input: SavedUserData): Promise<void> {
 		console.log("[notify] ", input.name);
 	}
 }
@@ -48,11 +48,11 @@ class UserService {
 const input: UserData = { name: "test", age: 30 };
 const s = new UserService();
 
-// ----- ✅ 正しい順序: validate → save → sendNotification ---------------------
+// ----- ✅ 正しい順序: validate → save → notify ---------------------
 const validated = s.validate(input);
 if (validated) {
 	const saved = await s.save(validated);
-	await s.sendNotification(saved);
+	await s.notify(saved);
 }
 
 // ----- ❌ 順序ミスはコンパイル時に止まる -------------------------------------
@@ -62,7 +62,7 @@ function _typeOnlyExamples() {
 	s.save(input);
 
 	// @ts-expect-error  save をスキップ (ValidatedUserData は SavedUserData ではない)
-	s.sendNotification(validated!);
+	s.notify(validated!);
 }
 void _typeOnlyExamples;
 

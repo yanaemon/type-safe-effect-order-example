@@ -27,7 +27,7 @@ class UserDataProcessor {
         console.log("[save]   ", this.data.name);
         return new UserDataProcessor(this.data);
     }
-    async sendNotification() {
+    async notify() {
         console.log("[notify] ", this.data.name);
     }
 }
@@ -37,14 +37,14 @@ const p = new UserDataProcessor(input);
 const validated = p.validate();
 if (validated) {
     const saved = await validated.save();
-    await saved.sendNotification();
+    await saved.notify();
 }
 // ----- ❌ 順序ミスは this 制約で止まる ---------------------------------------
 async function _typeOnlyExamples() {
     // @ts-expect-error  validate をスキップ (this は UserDataProcessor<"draft">)
     await p.save();
     // @ts-expect-error  save をスキップ
-    await p.validate().sendNotification();
+    await p.validate().notify();
 }
 void _typeOnlyExamples;
 export {};

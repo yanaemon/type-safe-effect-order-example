@@ -23,14 +23,14 @@ type UserData = {
 
 // 全メソッドを一度 interface に並べて、各状態は Omit で削るベース。
 interface UserDataProcessorIF {
-	validate(): Omit<UserDataProcessorIF, "validate" | "sendNotification"> | null;
+	validate(): Omit<UserDataProcessorIF, "validate" | "notify"> | null;
 	save(): Promise<Omit<UserDataProcessorIF, "validate" | "save">>;
-	sendNotification(): Promise<void>;
+	notify(): Promise<void>;
 }
 
 // 状態ごとの「見える型」 (可読性のため別名を付ける)
-type Draft = Omit<UserDataProcessorIF, "save" | "sendNotification">;
-type Validated = Omit<UserDataProcessorIF, "validate" | "sendNotification">;
+type Draft = Omit<UserDataProcessorIF, "save" | "notify">;
+type Validated = Omit<UserDataProcessorIF, "validate" | "notify">;
 type Saved = Omit<UserDataProcessorIF, "validate" | "save">;
 
 class UserDataProcessor implements UserDataProcessorIF {
@@ -52,7 +52,7 @@ class UserDataProcessor implements UserDataProcessorIF {
 		return this;
 	}
 
-	async sendNotification(): Promise<void> {
+	async notify(): Promise<void> {
 		console.log("[notify] ", this.data.name);
 	}
 }
@@ -64,7 +64,7 @@ const p = UserDataProcessor.create(input);
 const validated = p.validate();
 if (validated) {
 	const saved = await validated.save();
-	await saved.sendNotification();
+	await saved.notify();
 }
 
 // ----- ❌ 順序ミスは「型から消えている」のでそもそも補完に出ない -------------
@@ -72,8 +72,8 @@ async function _typeOnlyExamples() {
 	// @ts-expect-error  Draft には save が無い (型から消えている)
 	await p.save();
 
-	// @ts-expect-error  Validated には sendNotification が無い
-	await p.validate()!.sendNotification();
+	// @ts-expect-error  Validated には notify が無い
+	await p.validate()!.notify();
 
 	const v = p.validate()!;
 	const s = await v.save();

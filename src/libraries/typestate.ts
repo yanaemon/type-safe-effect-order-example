@@ -55,7 +55,7 @@ async function save(input: UserData): Promise<void> {
 	console.log("[save]   ", input.name);
 }
 
-async function sendNotification(input: UserData): Promise<void> {
+async function notify(input: UserData): Promise<void> {
 	console.log("[notify] ", input.name);
 }
 
@@ -78,7 +78,7 @@ console.log("--- happy path ---");
 	await save(input);
 	fsm.go(UserState.Saved);
 
-	await sendNotification(input);
+	await notify(input);
 	fsm.go(UserState.Notified);
 
 	console.log("[done]   ", UserState[fsm.currentState]);

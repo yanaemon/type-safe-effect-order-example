@@ -42,7 +42,7 @@ class UserDataProcessor<S extends State = "draft"> {
 		return new UserDataProcessor<"saved">(this.data);
 	}
 
-	async sendNotification(this: UserDataProcessor<"saved">): Promise<void> {
+	async notify(this: UserDataProcessor<"saved">): Promise<void> {
 		console.log("[notify] ", this.data.name);
 	}
 }
@@ -54,7 +54,7 @@ const p = new UserDataProcessor(input);
 const validated = p.validate();
 if (validated) {
 	const saved = await validated.save();
-	await saved.sendNotification();
+	await saved.notify();
 }
 
 // ----- ❌ 順序ミスは this 制約で止まる ---------------------------------------
@@ -63,7 +63,7 @@ async function _typeOnlyExamples() {
 	await p.save();
 
 	// @ts-expect-error  save をスキップ
-	await p.validate()!.sendNotification();
+	await p.validate()!.notify();
 }
 void _typeOnlyExamples;
 

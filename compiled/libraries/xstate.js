@@ -17,7 +17,7 @@
 //   - 状態と遷移を「データ」として持つ → 可視化 / DevTools / Inspector
 //   - actor model で並行・非同期処理を構造化
 //
-// このファイルでは validate → save → sendNotification を xstate v5 で組み、
+// このファイルでは validate → save → notify を xstate v5 で組み、
 // 「runtime で不正遷移が止まる」様子を最後に実演する。
 // =============================================================================
 import { createActor, fromPromise, setup, waitFor } from "xstate";

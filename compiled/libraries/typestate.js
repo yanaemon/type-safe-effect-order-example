@@ -44,7 +44,7 @@ function createFsm() {
 async function save(input) {
     console.log("[save]   ", input.name);
 }
-async function sendNotification(input) {
+async function notify(input) {
     console.log("[notify] ", input.name);
 }
 // -----------------------------------------------------------------------------
@@ -61,7 +61,7 @@ console.log("--- happy path ---");
     // 副作用は外で await し、終わったら go() で状態を進める
     await save(input);
     fsm.go(UserState.Saved);
-    await sendNotification(input);
+    await notify(input);
     fsm.go(UserState.Notified);
     console.log("[done]   ", UserState[fsm.currentState]);
 }

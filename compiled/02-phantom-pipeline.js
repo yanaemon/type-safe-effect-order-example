@@ -24,17 +24,17 @@ class UserService {
         console.log("[save]   ", input.name);
         return input;
     }
-    async sendNotification(input) {
+    async notify(input) {
         console.log("[notify] ", input.name);
     }
 }
 const input = { name: "test", age: 30 };
 const s = new UserService();
-// ----- ✅ 正しい順序: validate → save → sendNotification ---------------------
+// ----- ✅ 正しい順序: validate → save → notify ---------------------
 const validated = s.validate(input);
 if (validated) {
     const saved = await s.save(validated);
-    await s.sendNotification(saved);
+    await s.notify(saved);
 }
 // ----- ❌ 順序ミスはコンパイル時に止まる -------------------------------------
 // 実行しないので関数に閉じ込める。型チェックのみで意図したエラーが出るかを確認する。
@@ -42,7 +42,7 @@ function _typeOnlyExamples() {
     // @ts-expect-error  validate をスキップ (UserData は ValidatedUserData ではない)
     s.save(input);
     // @ts-expect-error  save をスキップ (ValidatedUserData は SavedUserData ではない)
-    s.sendNotification(validated);
+    s.notify(validated);
 }
 void _typeOnlyExamples;
 export {};

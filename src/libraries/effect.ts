@@ -7,7 +7,7 @@
 // エフェクト記述ライブラリで、Type-State Pattern が解いている
 // 「コンパイル時に順序ミスを止める」とは目的が違う。
 //
-// このファイルでは、同じ validate → save → sendNotification を
+// このファイルでは、同じ validate → save → notify を
 // Effect の流儀で書き直して、何が得られて、何が得られないかを並べる。
 //
 // 得られるもの:
@@ -71,7 +71,7 @@ const save = (input: UserData) =>
 		catch: (cause) => new SaveError(cause),
 	});
 
-const sendNotification = (input: UserData) =>
+const notify = (input: UserData) =>
 	Effect.tryPromise({
 		try: async () => {
 			console.log("[notify] ", input.name);
@@ -87,12 +87,12 @@ const program = (input: UserData) =>
 	Effect.gen(function* () {
 		const validated = yield* validate(input);
 		const saved = yield* save(validated);
-		yield* sendNotification(saved);
+		yield* notify(saved);
 	});
 
 // pipe スタイルでも書ける (お好みで)
 const programPipe = (input: UserData) =>
-	pipe(validate(input), Effect.flatMap(save), Effect.flatMap(sendNotification));
+	pipe(validate(input), Effect.flatMap(save), Effect.flatMap(notify));
 
 // -----------------------------------------------------------------------------
 // 実行
@@ -122,7 +122,7 @@ console.log("[exit]   ", failed._tag); // "Failure"
 function _typeOnlyExamples(input: UserData) {
 	// 順序を入れ替えても Effect の型は怒らない
 	const wrong = Effect.gen(function* () {
-		yield* sendNotification(input); // 通知が先
+		yield* notify(input); // 通知が先
 		yield* save(input); // 保存が後
 		yield* validate(input); // 検証が最後 (もう遅い)
 	});

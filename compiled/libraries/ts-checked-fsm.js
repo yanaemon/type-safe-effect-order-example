@@ -59,7 +59,7 @@ const { nextState } = stateMachine()
 async function save(input) {
     console.log("[save]   ", input.name);
 }
-async function sendNotification(input) {
+async function notify(input) {
     console.log("[notify] ", input.name);
 }
 // -----------------------------------------------------------------------------
@@ -78,7 +78,7 @@ console.log("--- happy path ---");
         state = nextState(state, { actionName: "SAVE" });
         console.log("after SAVE    :", state.stateName);
         if (state.stateName === "saved") {
-            await sendNotification(input);
+            await notify(input);
             state = nextState(state, { actionName: "NOTIFY" });
             console.log("after NOTIFY  :", state.stateName);
         }

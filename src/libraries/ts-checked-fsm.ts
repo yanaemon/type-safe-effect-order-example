@@ -79,7 +79,7 @@ async function save(input: UserData): Promise<void> {
 	console.log("[save]   ", input.name);
 }
 
-async function sendNotification(input: UserData): Promise<void> {
+async function notify(input: UserData): Promise<void> {
 	console.log("[notify] ", input.name);
 }
 
@@ -103,7 +103,7 @@ console.log("--- happy path ---");
 		console.log("after SAVE    :", state.stateName);
 
 		if (state.stateName === "saved") {
-			await sendNotification(input);
+			await notify(input);
 			state = nextState(state, { actionName: "NOTIFY" });
 			console.log("after NOTIFY  :", state.stateName);
 		}
