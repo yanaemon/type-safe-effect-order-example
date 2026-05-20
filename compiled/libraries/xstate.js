@@ -53,10 +53,7 @@ const userMachine = setup({
         // draft からは VALIDATE しか受け付けない
         draft: {
             on: {
-                VALIDATE: [
-                    { target: "validated", guard: "isValid" },
-                    { target: "invalid" },
-                ],
+                VALIDATE: [{ target: "validated", guard: "isValid" }, { target: "invalid" }],
             },
         },
         // validated からは SAVE しか受け付けない

@@ -26,22 +26,22 @@
 import { Effect, pipe } from "effect";
 
 type UserData = {
-	name: string;
-	age: number;
+    name: string;
+    age: number;
 };
 
 // エラーは値。例外を投げずに型で表現する。
 class ValidationError {
-	readonly _tag = "ValidationError";
-	constructor(readonly reason: string) {}
+    readonly _tag = "ValidationError";
+    constructor(readonly reason: string) {}
 }
 class SaveError {
-	readonly _tag = "SaveError";
-	constructor(readonly cause: unknown) {}
+    readonly _tag = "SaveError";
+    constructor(readonly cause: unknown) {}
 }
 class NotifyError {
-	readonly _tag = "NotifyError";
-	constructor(readonly cause: unknown) {}
+    readonly _tag = "NotifyError";
+    constructor(readonly cause: unknown) {}
 }
 
 // -----------------------------------------------------------------------------
@@ -50,47 +50,47 @@ class NotifyError {
 
 // 失敗しうる純粋なチェック → Effect.fail で型に乗せる
 const validate = (input: UserData) =>
-	Effect.gen(function* () {
-		console.log("[validate]", input.name);
-		if (input.name.length === 0 || input.age < 0) {
-			return yield* Effect.fail(new ValidationError("invalid input"));
-		}
-		return input;
-	});
+    Effect.gen(function* () {
+        console.log("[validate]", input.name);
+        if (input.name.length === 0 || input.age < 0) {
+            return yield* Effect.fail(new ValidationError("invalid input"));
+        }
+        return input;
+    });
 
 // async な副作用 (DB / 外部 API) は Effect.tryPromise で包むと、Promise rejection が
 // 型付き error に変換されてエフェクトの型に乗る (例外で抜けることはない)
 const save = (input: UserData) =>
-	Effect.tryPromise({
-		try: async () => {
-			console.log("[save]   ", input.name);
-			return input;
-		},
-		catch: (cause) => new SaveError(cause),
-	});
+    Effect.tryPromise({
+        try: async () => {
+            console.log("[save]   ", input.name);
+            return input;
+        },
+        catch: (cause) => new SaveError(cause),
+    });
 
 const notify = (input: UserData) =>
-	Effect.tryPromise({
-		try: async () => {
-			console.log("[notify] ", input.name);
-		},
-		catch: (cause) => new NotifyError(cause),
-	});
+    Effect.tryPromise({
+        try: async () => {
+            console.log("[notify] ", input.name);
+        },
+        catch: (cause) => new NotifyError(cause),
+    });
 
 // -----------------------------------------------------------------------------
 // 合成: Effect.gen で逐次。前段が失敗するとそこで短絡する (例外なし)
 // -----------------------------------------------------------------------------
 
 const program = (input: UserData) =>
-	Effect.gen(function* () {
-		const validated = yield* validate(input);
-		const saved = yield* save(validated);
-		yield* notify(saved);
-	});
+    Effect.gen(function* () {
+        const validated = yield* validate(input);
+        const saved = yield* save(validated);
+        yield* notify(saved);
+    });
 
 // pipe スタイルでも書ける (お好みで)
 const programPipe = (input: UserData) =>
-	pipe(validate(input), Effect.flatMap(save), Effect.flatMap(notify));
+    pipe(validate(input), Effect.flatMap(save), Effect.flatMap(notify));
 
 // -----------------------------------------------------------------------------
 // 実行
@@ -118,13 +118,13 @@ console.log("[exit]   ", failed._tag); // "Failure"
 //   Effect の強みはエラー型・並行・リソース管理など別軸。
 
 function _typeOnlyExamples(input: UserData) {
-	// 順序を入れ替えても Effect の型は怒らない
-	const wrong = Effect.gen(function* () {
-		yield* notify(input); // 通知が先
-		yield* save(input); // 保存が後
-		yield* validate(input); // 検証が最後 (もう遅い)
-	});
-	void wrong;
+    // 順序を入れ替えても Effect の型は怒らない
+    const wrong = Effect.gen(function* () {
+        yield* notify(input); // 通知が先
+        yield* save(input); // 保存が後
+        yield* validate(input); // 検証が最後 (もう遅い)
+    });
+    void wrong;
 }
 void _typeOnlyExamples;
 

@@ -14,35 +14,37 @@
 // =============================================================================
 
 type UserData = {
-	name: string;
-	age: number;
+    name: string;
+    age: number;
 };
 
 type State = "draft" | "validated" | "saved";
 
 class UserService<S extends State = "draft"> {
-	// phantom: 構造的型付けで <"draft"> と <"validated"> を区別するためだけに存在。
-	// `declare` 修飾子で「型だけのフィールド」になり、コンパイル後の JS では消える。
-	private declare readonly _state: S;
+    // phantom: 構造的型付けで <"draft"> と <"validated"> を区別するためだけに存在。
+    // `declare` 修飾子で「型だけのフィールド」になり、コンパイル後の JS では消える。
+    private declare readonly _state: S;
 
-	constructor(private readonly data: UserData) {}
+    constructor(private readonly data: UserData) {}
 
-	// this の型で「呼び出し可能な状態」を制約する。
-	// 戻り値の型で「呼び出し後の状態」を表現する。
-	validate(this: UserService<"draft">): UserService<"validated"> | null {
-		console.log("[validate]", this.data.name);
-		if (this.data.name.length === 0 || this.data.age < 0) return null;
-		return new UserService<"validated">(this.data);
-	}
+    // this の型で「呼び出し可能な状態」を制約する。
+    // 戻り値の型で「呼び出し後の状態」を表現する。
+    validate(this: UserService<"draft">): UserService<"validated"> | null {
+        console.log("[validate]", this.data.name);
+        if (this.data.name.length === 0 || this.data.age < 0) {
+            return null;
+        }
+        return new UserService<"validated">(this.data);
+    }
 
-	async save(this: UserService<"validated">): Promise<UserService<"saved">> {
-		console.log("[save]   ", this.data.name);
-		return new UserService<"saved">(this.data);
-	}
+    async save(this: UserService<"validated">): Promise<UserService<"saved">> {
+        console.log("[save]   ", this.data.name);
+        return new UserService<"saved">(this.data);
+    }
 
-	async notify(this: UserService<"saved">): Promise<void> {
-		console.log("[notify] ", this.data.name);
-	}
+    async notify(this: UserService<"saved">): Promise<void> {
+        console.log("[notify] ", this.data.name);
+    }
 }
 
 const input: UserData = { name: "test", age: 30 };
@@ -51,17 +53,17 @@ const input: UserData = { name: "test", age: 30 };
 const p = new UserService(input);
 const validated = p.validate();
 if (validated) {
-	const saved = await validated.save();
-	await saved.notify();
+    const saved = await validated.save();
+    await saved.notify();
 }
 
 // ----- ❌ 順序ミスは this 制約で止まる ---------------------------------------
 async function _typeOnlyExamples() {
-	// @ts-expect-error  validate をスキップ (this は UserService<"draft">)
-	await p.save();
+    // @ts-expect-error  validate をスキップ (this は UserService<"draft">)
+    await p.save();
 
-	// @ts-expect-error  save をスキップ
-	await p.validate()!.notify();
+    // @ts-expect-error  save をスキップ
+    await p.validate()!.notify();
 }
 void _typeOnlyExamples;
 

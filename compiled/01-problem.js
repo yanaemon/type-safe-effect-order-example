@@ -11,8 +11,9 @@
 class UserService {
     validate(input) {
         console.log("[validate]", input.name);
-        if (input.name.length === 0 || input.age < 0)
+        if (input.name.length === 0 || input.age < 0) {
             return false;
+        }
         return true;
     }
     async save(input) {

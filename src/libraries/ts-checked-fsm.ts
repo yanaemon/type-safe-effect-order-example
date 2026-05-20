@@ -28,8 +28,8 @@ import tsCheckedFsm from "ts-checked-fsm";
 const { stateMachine } = tsCheckedFsm;
 
 type UserData = {
-	name: string;
-	age: number;
+    name: string;
+    age: number;
 };
 
 // -----------------------------------------------------------------------------
@@ -39,49 +39,41 @@ type UserData = {
 // -----------------------------------------------------------------------------
 
 const { nextState } = stateMachine()
-	.state("draft")
-	.state("validated")
-	.state("invalid")
-	.state("saved")
-	.state("notified")
-	// 宣言されていない state を書くと .done() でコンパイルエラーになる
-	.transition("draft", "validated")
-	.transition("draft", "invalid")
-	.transition("validated", "saved")
-	.transition("saved", "notified")
-	.action<"VALIDATE", { input: UserData }>("VALIDATE")
-	.action("SAVE")
-	.action("NOTIFY")
-	// ハンドラの戻り値が「宣言された遷移先 state」でないとコンパイルエラー
-	.actionHandler("draft", "VALIDATE", (_state, action) => {
-		console.log("[validate]", action.input.name);
-		if (action.input.name.length === 0 || action.input.age < 0) {
-			return { stateName: "invalid" } as const;
-		}
-		return { stateName: "validated" } as const;
-	})
-	.actionHandler(
-		"validated",
-		"SAVE",
-		(_state, _action) => ({ stateName: "saved" }) as const,
-	)
-	.actionHandler(
-		"saved",
-		"NOTIFY",
-		(_state, _action) => ({ stateName: "notified" }) as const,
-	)
-	.done();
+    .state("draft")
+    .state("validated")
+    .state("invalid")
+    .state("saved")
+    .state("notified")
+    // 宣言されていない state を書くと .done() でコンパイルエラーになる
+    .transition("draft", "validated")
+    .transition("draft", "invalid")
+    .transition("validated", "saved")
+    .transition("saved", "notified")
+    .action<"VALIDATE", { input: UserData }>("VALIDATE")
+    .action("SAVE")
+    .action("NOTIFY")
+    // ハンドラの戻り値が「宣言された遷移先 state」でないとコンパイルエラー
+    .actionHandler("draft", "VALIDATE", (_state, action) => {
+        console.log("[validate]", action.input.name);
+        if (action.input.name.length === 0 || action.input.age < 0) {
+            return { stateName: "invalid" } as const;
+        }
+        return { stateName: "validated" } as const;
+    })
+    .actionHandler("validated", "SAVE", (_state, _action) => ({ stateName: "saved" }) as const)
+    .actionHandler("saved", "NOTIFY", (_state, _action) => ({ stateName: "notified" }) as const)
+    .done();
 
 // -----------------------------------------------------------------------------
 // 副作用 (async) は FSM の外で実行し、終わったら nextState で状態を進める
 // -----------------------------------------------------------------------------
 
 async function save(input: UserData): Promise<void> {
-	console.log("[save]   ", input.name);
+    console.log("[save]   ", input.name);
 }
 
 async function notify(input: UserData): Promise<void> {
-	console.log("[notify] ", input.name);
+    console.log("[notify] ", input.name);
 }
 
 // -----------------------------------------------------------------------------
@@ -91,24 +83,24 @@ async function notify(input: UserData): Promise<void> {
 console.log("--- happy path ---");
 
 {
-	const input: UserData = { name: "test", age: 30 };
-	let state = nextState({ stateName: "draft" } as const, {
-		actionName: "VALIDATE",
-		input,
-	});
-	console.log("after VALIDATE:", state.stateName);
+    const input: UserData = { name: "test", age: 30 };
+    let state = nextState({ stateName: "draft" } as const, {
+        actionName: "VALIDATE",
+        input,
+    });
+    console.log("after VALIDATE:", state.stateName);
 
-	if (state.stateName === "validated") {
-		await save(input);
-		state = nextState(state, { actionName: "SAVE" });
-		console.log("after SAVE    :", state.stateName);
+    if (state.stateName === "validated") {
+        await save(input);
+        state = nextState(state, { actionName: "SAVE" });
+        console.log("after SAVE    :", state.stateName);
 
-		if (state.stateName === "saved") {
-			await notify(input);
-			state = nextState(state, { actionName: "NOTIFY" });
-			console.log("after NOTIFY  :", state.stateName);
-		}
-	}
+        if (state.stateName === "saved") {
+            await notify(input);
+            state = nextState(state, { actionName: "NOTIFY" });
+            console.log("after NOTIFY  :", state.stateName);
+        }
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -118,12 +110,12 @@ console.log("--- happy path ---");
 console.log("--- guard failure ---");
 
 {
-	const bad: UserData = { name: "", age: 30 };
-	const state = nextState({ stateName: "draft" } as const, {
-		actionName: "VALIDATE",
-		input: bad,
-	});
-	console.log("[exit]   ", state.stateName); // "invalid"
+    const bad: UserData = { name: "", age: 30 };
+    const state = nextState({ stateName: "draft" } as const, {
+        actionName: "VALIDATE",
+        input: bad,
+    });
+    console.log("[exit]   ", state.stateName); // "invalid"
 }
 
 // -----------------------------------------------------------------------------
@@ -133,11 +125,11 @@ console.log("--- guard failure ---");
 console.log("--- wrong action silently no-op ---");
 
 {
-	// draft 状態で SAVE は宣言されていない → state は変わらない (型レベルでは弾かない)
-	const state = nextState({ stateName: "draft" } as const, {
-		actionName: "SAVE",
-	});
-	console.log("[state]  ", state.stateName); // "draft" のまま
+    // draft 状態で SAVE は宣言されていない → state は変わらない (型レベルでは弾かない)
+    const state = nextState({ stateName: "draft" } as const, {
+        actionName: "SAVE",
+    });
+    console.log("[state]  ", state.stateName); // "draft" のまま
 }
 
 // -----------------------------------------------------------------------------
@@ -151,31 +143,31 @@ console.log("--- wrong action silently no-op ---");
 //    メッセージが見える。
 
 function _typeOnlyExamples() {
-	// ケース 1: 宣言していない state への transition
-	void stateMachine()
-		.state("draft")
-		.state("validated")
-		// @ts-expect-error  "saved" は宣言していない → transition できない
-		.transition("draft", "saved");
+    // ケース 1: 宣言していない state への transition
+    void stateMachine()
+        .state("draft")
+        .state("validated")
+        // @ts-expect-error  "saved" は宣言していない → transition できない
+        .transition("draft", "saved");
 
-	// ケース 2: 同じ state を 2 度宣言
-	void stateMachine()
-		.state("draft")
-		// @ts-expect-error  "draft" は既に宣言済み
-		.state("draft");
+    // ケース 2: 同じ state を 2 度宣言
+    void stateMachine()
+        .state("draft")
+        // @ts-expect-error  "draft" は既に宣言済み
+        .state("draft");
 
-	// ケース 3: ハンドラが遷移宣言と矛盾する state を返す
-	void stateMachine()
-		.state("draft")
-		.state("validated")
-		.transition("draft", "validated")
-		.action("VALIDATE")
-		.actionHandler(
-			"draft",
-			"VALIDATE",
-			// @ts-expect-error  "draft" -> "saved" の transition は宣言されていない
-			(_s, _a) => ({ stateName: "saved" }) as const,
-		);
+    // ケース 3: ハンドラが遷移宣言と矛盾する state を返す
+    void stateMachine()
+        .state("draft")
+        .state("validated")
+        .transition("draft", "validated")
+        .action("VALIDATE")
+        .actionHandler(
+            "draft",
+            "VALIDATE",
+            // @ts-expect-error  "draft" -> "saved" の transition は宣言されていない
+            (_s, _a) => ({ stateName: "saved" }) as const,
+        );
 }
 void _typeOnlyExamples;
 

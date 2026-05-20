@@ -10,43 +10,45 @@
 // =============================================================================
 
 type UserData = {
-	name: string;
-	age: number;
+    name: string;
+    age: number;
 };
 
 class UserService {
-	validate(input: UserData): boolean {
-		console.log("[validate]", input.name);
-		if (input.name.length === 0 || input.age < 0) return false;
-		return true;
-	}
-	async save(input: UserData): Promise<void> {
-		console.log("[save]   ", input.name);
-		// 本番なら DB に書き込む
-	}
-	async notify(input: UserData): Promise<void> {
-		console.log("[notify] ", input.name);
-		// 本番なら通知を送る
-	}
+    validate(input: UserData): boolean {
+        console.log("[validate]", input.name);
+        if (input.name.length === 0 || input.age < 0) {
+            return false;
+        }
+        return true;
+    }
+    async save(input: UserData): Promise<void> {
+        console.log("[save]   ", input.name);
+        // 本番なら DB に書き込む
+    }
+    async notify(input: UserData): Promise<void> {
+        console.log("[notify] ", input.name);
+        // 本番なら通知を送る
+    }
 }
 
 const input: UserData = { name: "test", age: 30 };
 
 // ----- ✅ 正しい順序 ---------------------------------------------------------
 {
-	const s = new UserService();
-	s.validate(input);
-	await s.save(input);
-	await s.notify(input);
+    const s = new UserService();
+    s.validate(input);
+    await s.save(input);
+    await s.notify(input);
 }
 
 // ----- ❌ 順序ミス: TS は通してしまう ----------------------------------------
 // async になっても引数の型が同じなので、順番を入れ替えてもコンパイルが通る。
 {
-	const s = new UserService();
-	await s.notify(input); // 保存前に通知
-	await s.save(input); // バリデーション前に保存
-	s.validate(input); // 最後にバリデーション (もう遅い)
+    const s = new UserService();
+    await s.notify(input); // 保存前に通知
+    await s.save(input); // バリデーション前に保存
+    s.validate(input); // 最後にバリデーション (もう遅い)
 }
 
 // 結論:

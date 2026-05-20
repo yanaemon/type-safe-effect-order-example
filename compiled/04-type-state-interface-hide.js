@@ -27,8 +27,9 @@ class UserService {
     }
     validate() {
         console.log("[validate]", this.data.name);
-        if (this.data.name.length === 0 || this.data.age < 0)
+        if (this.data.name.length === 0 || this.data.age < 0) {
             return null;
+        }
         return this; // 実体は同じ。型だけ次の状態に進める
     }
     async save() {

@@ -23,16 +23,16 @@
 import { TypeState } from "typestate";
 
 type UserData = {
-	name: string;
-	age: number;
+    name: string;
+    age: number;
 };
 
 // 状態は enum (typestate は enum 値の === 比較で遷移を見る)
 enum UserState {
-	Draft,
-	Validated,
-	Saved,
-	Notified,
+    Draft,
+    Validated,
+    Saved,
+    Notified,
 }
 
 // -----------------------------------------------------------------------------
@@ -40,11 +40,11 @@ enum UserState {
 // -----------------------------------------------------------------------------
 
 function createFsm(): TypeState.FiniteStateMachine<UserState> {
-	const fsm = new TypeState.FiniteStateMachine<UserState>(UserState.Draft);
-	fsm.from(UserState.Draft).to(UserState.Validated);
-	fsm.from(UserState.Validated).to(UserState.Saved);
-	fsm.from(UserState.Saved).to(UserState.Notified);
-	return fsm;
+    const fsm = new TypeState.FiniteStateMachine<UserState>(UserState.Draft);
+    fsm.from(UserState.Draft).to(UserState.Validated);
+    fsm.from(UserState.Validated).to(UserState.Saved);
+    fsm.from(UserState.Saved).to(UserState.Notified);
+    return fsm;
 }
 
 // -----------------------------------------------------------------------------
@@ -52,11 +52,11 @@ function createFsm(): TypeState.FiniteStateMachine<UserState> {
 // -----------------------------------------------------------------------------
 
 async function save(input: UserData): Promise<void> {
-	console.log("[save]   ", input.name);
+    console.log("[save]   ", input.name);
 }
 
 async function notify(input: UserData): Promise<void> {
-	console.log("[notify] ", input.name);
+    console.log("[notify] ", input.name);
 }
 
 // -----------------------------------------------------------------------------
@@ -66,23 +66,23 @@ async function notify(input: UserData): Promise<void> {
 console.log("--- happy path ---");
 
 {
-	const input: UserData = { name: "test", age: 30 };
-	const fsm = createFsm();
+    const input: UserData = { name: "test", age: 30 };
+    const fsm = createFsm();
 
-	// validate は同期チェック → go(Validated)
-	console.log("[validate]", input.name);
-	if (!(input.name.length === 0 || input.age < 0)) {
-		fsm.go(UserState.Validated);
-	}
+    // validate は同期チェック → go(Validated)
+    console.log("[validate]", input.name);
+    if (!(input.name.length === 0 || input.age < 0)) {
+        fsm.go(UserState.Validated);
+    }
 
-	// 副作用は外で await し、終わったら go() で状態を進める
-	await save(input);
-	fsm.go(UserState.Saved);
+    // 副作用は外で await し、終わったら go() で状態を進める
+    await save(input);
+    fsm.go(UserState.Saved);
 
-	await notify(input);
-	fsm.go(UserState.Notified);
+    await notify(input);
+    fsm.go(UserState.Notified);
 
-	console.log("[done]   ", UserState[fsm.currentState]);
+    console.log("[done]   ", UserState[fsm.currentState]);
 }
 
 // -----------------------------------------------------------------------------
@@ -92,14 +92,14 @@ console.log("--- happy path ---");
 console.log("--- wrong order throws ---");
 
 {
-	const fsm = createFsm();
-	// 現在は Draft。Draft -> Saved の遷移は宣言されていない
-	try {
-		fsm.go(UserState.Saved);
-	} catch (e) {
-		console.log("[throw]  ", e instanceof Error ? e.message : String(e));
-	}
-	console.log("[state]  ", UserState[fsm.currentState]); // "Draft" のまま
+    const fsm = createFsm();
+    // 現在は Draft。Draft -> Saved の遷移は宣言されていない
+    try {
+        fsm.go(UserState.Saved);
+    } catch (e) {
+        console.log("[throw]  ", e instanceof Error ? e.message : String(e));
+    }
+    console.log("[state]  ", UserState[fsm.currentState]); // "Draft" のまま
 }
 
 // -----------------------------------------------------------------------------
@@ -109,15 +109,15 @@ console.log("--- wrong order throws ---");
 console.log("--- canGo guard ---");
 
 {
-	const fsm = createFsm();
-	console.log("Draft -> Saved 可能?", fsm.canGo(UserState.Saved)); // false
-	console.log("Draft -> Validated 可能?", fsm.canGo(UserState.Validated)); // true
+    const fsm = createFsm();
+    console.log("Draft -> Saved 可能?", fsm.canGo(UserState.Saved)); // false
+    console.log("Draft -> Validated 可能?", fsm.canGo(UserState.Validated)); // true
 
-	if (fsm.canGo(UserState.Saved)) {
-		fsm.go(UserState.Saved);
-	} else {
-		console.log("[skip]   Draft からは Saved に行けないので no-op");
-	}
+    if (fsm.canGo(UserState.Saved)) {
+        fsm.go(UserState.Saved);
+    } else {
+        console.log("[skip]   Draft からは Saved に行けないので no-op");
+    }
 }
 
 // -----------------------------------------------------------------------------

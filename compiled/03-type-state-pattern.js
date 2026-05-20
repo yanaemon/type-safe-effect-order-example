@@ -21,8 +21,9 @@ class UserService {
     // 戻り値の型で「呼び出し後の状態」を表現する。
     validate() {
         console.log("[validate]", this.data.name);
-        if (this.data.name.length === 0 || this.data.age < 0)
+        if (this.data.name.length === 0 || this.data.age < 0) {
             return null;
+        }
         return new UserService(this.data);
     }
     async save() {

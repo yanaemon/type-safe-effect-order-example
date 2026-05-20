@@ -18,8 +18,8 @@
 // =============================================================================
 
 type UserData = {
-	name: string;
-	age: number;
+    name: string;
+    age: number;
 };
 
 // -----------------------------------------------------------------------------
@@ -32,26 +32,32 @@ type State = "draft" | "validated" | "saved";
 type Event = "VALIDATE" | "SAVE" | "NOTIFY";
 
 function dispatch(state: State, event: Event): State {
-	switch (state) {
-		case "draft":
-			if (event === "VALIDATE") return "validated";
-			return state;
-		case "validated":
-			if (event === "SAVE") return "saved";
-			return state;
-		case "saved":
-			if (event === "NOTIFY") return state; // 自己ループ
-			return state;
-	}
+    switch (state) {
+        case "draft":
+            if (event === "VALIDATE") {
+                return "validated";
+            }
+            return state;
+        case "validated":
+            if (event === "SAVE") {
+                return "saved";
+            }
+            return state;
+        case "saved":
+            if (event === "NOTIFY") {
+                return state; // 自己ループ
+            }
+            return state;
+    }
 }
 
 {
-	let s: State = "draft";
-	s = dispatch(s, "VALIDATE"); // validated
-	s = dispatch(s, "NOTIFY"); // ❌ saved 前に NOTIFY — runtime で no-op、validated のまま
-	s = dispatch(s, "SAVE"); // saved
-	s = dispatch(s, "NOTIFY"); // saved (適切な順序)
-	console.log("[A] final =", s);
+    let s: State = "draft";
+    s = dispatch(s, "VALIDATE"); // validated
+    s = dispatch(s, "NOTIFY"); // ❌ saved 前に NOTIFY — runtime で no-op、validated のまま
+    s = dispatch(s, "SAVE"); // saved
+    s = dispatch(s, "NOTIFY"); // saved (適切な順序)
+    console.log("[A] final =", s);
 }
 
 // 問題点:
@@ -66,58 +72,49 @@ function dispatch(state: State, event: Event): State {
 
 // 遷移表: 状態 → イベント名 → 次の状態。FSM 定義そのもの
 type Transitions = {
-	draft: { VALIDATE: "validated" };
-	validated: { SAVE: "saved" };
-	saved: { NOTIFY: "saved" };
+    draft: { VALIDATE: "validated" };
+    validated: { SAVE: "saved" };
+    saved: { NOTIFY: "saved" };
 };
 
 type TypedState<K extends State = State> = {
-	kind: K;
-	data: UserData;
+    kind: K;
+    data: UserData;
 };
 
-async function dispatchTyped<
-	K extends keyof Transitions,
-	E extends keyof Transitions[K],
->(
-	state: TypedState<K>,
-	event: { type: E },
+async function dispatchTyped<K extends keyof Transitions, E extends keyof Transitions[K]>(
+    state: TypedState<K>,
+    event: { type: E },
 ): Promise<TypedState<Transitions[K][E] & State>> {
-	// 外向きシグネチャが安全網。実装は plain な switch で十分なので、
-	// 内部 helper に投げて結果を `as never` で型に押し込む。
-	return _dispatchTyped(
-		state as TypedState,
-		event as { type: string },
-	) as never;
+    // 外向きシグネチャが安全網。実装は plain な switch で十分なので、
+    // 内部 helper に投げて結果を `as never` で型に押し込む。
+    return _dispatchTyped(state as TypedState, event as { type: string }) as never;
 }
 
-async function _dispatchTyped(
-	state: TypedState,
-	event: { type: string },
-): Promise<TypedState> {
-	if (state.kind === "draft" && event.type === "VALIDATE") {
-		console.log("[validate]", state.data.name);
-		if (state.data.name.length === 0 || state.data.age < 0) {
-			throw new Error("validation failed");
-		}
-		return { kind: "validated", data: state.data };
-	}
-	if (state.kind === "validated" && event.type === "SAVE") {
-		console.log("[save]   ", state.data.name);
-		return { kind: "saved", data: state.data };
-	}
-	if (state.kind === "saved" && event.type === "NOTIFY") {
-		console.log("[notify] ", state.data.name);
-		return state;
-	}
-	// 型システム上は到達不能だが、runtime の保険として残しておく
-	throw new Error(`invalid transition: ${state.kind} + ${event.type}`);
+async function _dispatchTyped(state: TypedState, event: { type: string }): Promise<TypedState> {
+    if (state.kind === "draft" && event.type === "VALIDATE") {
+        console.log("[validate]", state.data.name);
+        if (state.data.name.length === 0 || state.data.age < 0) {
+            throw new Error("validation failed");
+        }
+        return { kind: "validated", data: state.data };
+    }
+    if (state.kind === "validated" && event.type === "SAVE") {
+        console.log("[save]   ", state.data.name);
+        return { kind: "saved", data: state.data };
+    }
+    if (state.kind === "saved" && event.type === "NOTIFY") {
+        console.log("[notify] ", state.data.name);
+        return state;
+    }
+    // 型システム上は到達不能だが、runtime の保険として残しておく
+    throw new Error(`invalid transition: ${state.kind} + ${event.type}`);
 }
 
 // ✅ 各 await の戻りが narrow な TypedState<...> として絞られる
 const s0: TypedState<"draft"> = {
-	kind: "draft",
-	data: { name: "test", age: 30 },
+    kind: "draft",
+    data: { name: "test", age: 30 },
 };
 const s1 = await dispatchTyped(s0, { type: "VALIDATE" }); // TypedState<"validated">
 const s2 = await dispatchTyped(s1, { type: "SAVE" }); // TypedState<"saved">
@@ -126,14 +123,14 @@ void s3;
 
 // ❌ 順序ミスは compile-time に止まる
 async function _typeOnlyExamples() {
-	// @ts-expect-error  draft では NOTIFY を受理しない
-	await dispatchTyped(s0, { type: "NOTIFY" });
+    // @ts-expect-error  draft では NOTIFY を受理しない
+    await dispatchTyped(s0, { type: "NOTIFY" });
 
-	// @ts-expect-error  draft では SAVE を受理しない
-	await dispatchTyped(s0, { type: "SAVE" });
+    // @ts-expect-error  draft では SAVE を受理しない
+    await dispatchTyped(s0, { type: "SAVE" });
 
-	// @ts-expect-error  saved では VALIDATE を受理しない
-	await dispatchTyped(s2, { type: "VALIDATE" });
+    // @ts-expect-error  saved では VALIDATE を受理しない
+    await dispatchTyped(s2, { type: "VALIDATE" });
 }
 void _typeOnlyExamples;
 

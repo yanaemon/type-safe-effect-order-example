@@ -19,16 +19,19 @@
 function dispatch(state, event) {
     switch (state) {
         case "draft":
-            if (event === "VALIDATE")
+            if (event === "VALIDATE") {
                 return "validated";
+            }
             return state;
         case "validated":
-            if (event === "SAVE")
+            if (event === "SAVE") {
                 return "saved";
+            }
             return state;
         case "saved":
-            if (event === "NOTIFY")
+            if (event === "NOTIFY") {
                 return state; // 自己ループ
+            }
             return state;
     }
 }

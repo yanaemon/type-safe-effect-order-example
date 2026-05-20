@@ -16,8 +16,9 @@ class UserService {
     // null を返すことで「validate 失敗」を表現
     validate(input) {
         console.log("[validate]", input.name);
-        if (input.name.length === 0 || input.age < 0)
+        if (input.name.length === 0 || input.age < 0) {
             return null;
+        }
         // ラベルを貼って返す。実体は同じオブジェクト
         return input;
     }

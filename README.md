@@ -64,7 +64,12 @@ pnpm run:lib:xstate         # libraries/xstate.ts
 pnpm run:lib:typestate      # libraries/typestate.ts
 pnpm run:lib:ts-checked-fsm # libraries/ts-checked-fsm.ts
 
-pnpm diff:03        # src vs compiled の diff。型が erase される様子
+pnpm diff:01        # src vs compiled の diff。型が erase される様子
+pnpm diff:02        # (diff:01..06 まで揃っている)
+pnpm diff:03
+pnpm diff:04
+pnpm diff:05
+pnpm diff:06
 ```
 
 ## 読み順

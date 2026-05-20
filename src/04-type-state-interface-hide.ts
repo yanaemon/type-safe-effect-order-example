@@ -17,15 +17,15 @@
 // =============================================================================
 
 type UserData = {
-	name: string;
-	age: number;
+    name: string;
+    age: number;
 };
 
 // 全メソッドを一度 interface に並べて、各状態は Omit で削るベース。
 interface UserServiceIF {
-	validate(): Omit<UserServiceIF, "validate" | "notify"> | null;
-	save(): Promise<Omit<UserServiceIF, "validate" | "save">>;
-	notify(): Promise<void>;
+    validate(): Omit<UserServiceIF, "validate" | "notify"> | null;
+    save(): Promise<Omit<UserServiceIF, "validate" | "save">>;
+    notify(): Promise<void>;
 }
 
 // 状態ごとの「見える型」 (可読性のため別名を付ける)
@@ -34,28 +34,30 @@ type Validated = Omit<UserServiceIF, "validate" | "notify">;
 type Saved = Omit<UserServiceIF, "validate" | "save">;
 
 class UserService implements UserServiceIF {
-	// new で直接作らせない: create() 経由でしか入れない
-	private constructor(private readonly data: UserData) {}
+    // new で直接作らせない: create() 経由でしか入れない
+    private constructor(private readonly data: UserData) {}
 
-	// 初期状態は Draft のみ公開 (validate しか呼べない)
-	static create(data: UserData): Draft {
-		return new UserService(data);
-	}
+    // 初期状態は Draft のみ公開 (validate しか呼べない)
+    static create(data: UserData): Draft {
+        return new UserService(data);
+    }
 
-	validate(): Validated | null {
-		console.log("[validate]", this.data.name);
-		if (this.data.name.length === 0 || this.data.age < 0) return null;
-		return this; // 実体は同じ。型だけ次の状態に進める
-	}
+    validate(): Validated | null {
+        console.log("[validate]", this.data.name);
+        if (this.data.name.length === 0 || this.data.age < 0) {
+            return null;
+        }
+        return this; // 実体は同じ。型だけ次の状態に進める
+    }
 
-	async save(): Promise<Saved> {
-		console.log("[save]   ", this.data.name);
-		return this;
-	}
+    async save(): Promise<Saved> {
+        console.log("[save]   ", this.data.name);
+        return this;
+    }
 
-	async notify(): Promise<void> {
-		console.log("[notify] ", this.data.name);
-	}
+    async notify(): Promise<void> {
+        console.log("[notify] ", this.data.name);
+    }
 }
 
 const input: UserData = { name: "test", age: 30 };
@@ -64,22 +66,22 @@ const input: UserData = { name: "test", age: 30 };
 const p = UserService.create(input);
 const validated = p.validate();
 if (validated) {
-	const saved = await validated.save();
-	await saved.notify();
+    const saved = await validated.save();
+    await saved.notify();
 }
 
 // ----- ❌ 順序ミスは「型から消えている」のでそもそも補完に出ない -------------
 async function _typeOnlyExamples() {
-	// @ts-expect-error  Draft には save が無い (型から消えている)
-	await p.save();
+    // @ts-expect-error  Draft には save が無い (型から消えている)
+    await p.save();
 
-	// @ts-expect-error  Validated には notify が無い
-	await p.validate()!.notify();
+    // @ts-expect-error  Validated には notify が無い
+    await p.validate()!.notify();
 
-	const v = p.validate()!;
-	const s = await v.save();
-	// @ts-expect-error  Saved には save が無い
-	await s.save();
+    const v = p.validate()!;
+    const s = await v.save();
+    // @ts-expect-error  Saved には save が無い
+    await s.save();
 }
 void _typeOnlyExamples;
 

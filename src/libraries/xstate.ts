@@ -24,8 +24,8 @@
 import { createActor, fromPromise, setup, waitFor } from "xstate";
 
 type UserData = {
-	name: string;
-	age: number;
+    name: string;
+    age: number;
 };
 
 // -----------------------------------------------------------------------------
@@ -33,70 +33,67 @@ type UserData = {
 // -----------------------------------------------------------------------------
 
 const userMachine = setup({
-	types: {
-		context: {} as { input: UserData; error?: string },
-		input: {} as UserData,
-		events: {} as { type: "VALIDATE" } | { type: "SAVE" } | { type: "NOTIFY" },
-	},
-	actors: {
-		// 副作用は actor として切り出す。fromPromise で async 関数を載せる
-		saveActor: fromPromise(async ({ input }: { input: UserData }) => {
-			console.log("[save]   ", input.name);
-			return input;
-		}),
-		notifyActor: fromPromise(async ({ input }: { input: UserData }) => {
-			console.log("[notify] ", input.name);
-		}),
-	},
-	guards: {
-		isValid: ({ context }) => {
-			console.log("[validate]", context.input.name);
-			return !(context.input.name.length === 0 || context.input.age < 0);
-		},
-	},
+    types: {
+        context: {} as { input: UserData; error?: string },
+        input: {} as UserData,
+        events: {} as { type: "VALIDATE" } | { type: "SAVE" } | { type: "NOTIFY" },
+    },
+    actors: {
+        // 副作用は actor として切り出す。fromPromise で async 関数を載せる
+        saveActor: fromPromise(async ({ input }: { input: UserData }) => {
+            console.log("[save]   ", input.name);
+            return input;
+        }),
+        notifyActor: fromPromise(async ({ input }: { input: UserData }) => {
+            console.log("[notify] ", input.name);
+        }),
+    },
+    guards: {
+        isValid: ({ context }) => {
+            console.log("[validate]", context.input.name);
+            return !(context.input.name.length === 0 || context.input.age < 0);
+        },
+    },
 }).createMachine({
-	initial: "draft",
-	context: ({ input }) => ({ input }),
-	states: {
-		// draft からは VALIDATE しか受け付けない
-		draft: {
-			on: {
-				VALIDATE: [
-					{ target: "validated", guard: "isValid" },
-					{ target: "invalid" },
-				],
-			},
-		},
-		// validated からは SAVE しか受け付けない
-		validated: {
-			on: { SAVE: { target: "saving" } },
-		},
-		// saving は actor を invoke。完了で saved、失敗で failed へ
-		saving: {
-			invoke: {
-				src: "saveActor",
-				input: ({ context }) => context.input,
-				onDone: { target: "saved" },
-				onError: { target: "failed" },
-			},
-		},
-		// saved からは NOTIFY しか受け付けない
-		saved: {
-			on: { NOTIFY: { target: "notifying" } },
-		},
-		notifying: {
-			invoke: {
-				src: "notifyActor",
-				input: ({ context }) => context.input,
-				onDone: { target: "notified" },
-				onError: { target: "failed" },
-			},
-		},
-		// final 状態: ここに来たらマシン終了
-		notified: { type: "final" },
-		invalid: { type: "final" },
-		failed: { type: "final" },
-	},
+    initial: "draft",
+    context: ({ input }) => ({ input }),
+    states: {
+        // draft からは VALIDATE しか受け付けない
+        draft: {
+            on: {
+                VALIDATE: [{ target: "validated", guard: "isValid" }, { target: "invalid" }],
+            },
+        },
+        // validated からは SAVE しか受け付けない
+        validated: {
+            on: { SAVE: { target: "saving" } },
+        },
+        // saving は actor を invoke。完了で saved、失敗で failed へ
+        saving: {
+            invoke: {
+                src: "saveActor",
+                input: ({ context }) => context.input,
+                onDone: { target: "saved" },
+                onError: { target: "failed" },
+            },
+        },
+        // saved からは NOTIFY しか受け付けない
+        saved: {
+            on: { NOTIFY: { target: "notifying" } },
+        },
+        notifying: {
+            invoke: {
+                src: "notifyActor",
+                input: ({ context }) => context.input,
+                onDone: { target: "notified" },
+                onError: { target: "failed" },
+            },
+        },
+        // final 状態: ここに来たらマシン終了
+        notified: { type: "final" },
+        invalid: { type: "final" },
+        failed: { type: "final" },
+    },
 });
 
 // -----------------------------------------------------------------------------
