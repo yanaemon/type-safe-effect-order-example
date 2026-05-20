@@ -7,7 +7,7 @@ TSKaigi 2026「TypeScript の型で副作用の実行順序を制御する」の
 
 ```
 src/
-├── 01-..05-...ts          ← 本編 (この順で読む)
+├── 01-..06-...ts          ← 本編 (この順で読む)
 └── libraries/             ← 特定ライブラリでの実装例 (読み順は任意)
     └── effect.ts
 compiled/                  ← tsc 出力。src と同じ階層で .js が出る
@@ -29,6 +29,7 @@ tsconfig.json              ← rootDir=src, outDir=compiled
 | 03 | `src/03-type-state-pattern.ts` | 本旨: Type-State Pattern (クラスの型パラメータ + `this:` 制約) |
 | 04 | `src/04-type-state-interface-hide.ts` | 発展: interface + Omit で IDE 補完からも消す |
 | 05 | `src/05-dispatcher-pattern.ts` | 対比: 値ベース FSM (素朴 + 型付き遷移表)。type-state との棲み分け |
+| 06 | `src/06-type-state-effect-hybrid.ts` | 応用: Type-State × Effect ハイブリッド。順序は型、エラー / 並行は Effect |
 
 ### libraries/ — 特定ライブラリでの実装例
 
@@ -56,6 +57,7 @@ pnpm run:02         # 02-phantom-pipeline.ts
 pnpm run:03         # 03-type-state-pattern.ts
 pnpm run:04         # 04-type-state-interface-hide.ts
 pnpm run:05         # 05-dispatcher-pattern.ts
+pnpm run:06         # 06-type-state-effect-hybrid.ts
 
 pnpm run:lib:effect         # libraries/effect.ts
 pnpm run:lib:xstate         # libraries/xstate.ts
@@ -72,6 +74,7 @@ pnpm diff:03        # src vs compiled の diff。型が erase される様子
 3. `03-type-state-pattern.ts` — 状態 × 振る舞いをクラスに集約する本旨 (`this:` 制約)
 4. `04-type-state-interface-hide.ts` — interface + Omit で補完からも消す
 5. `05-dispatcher-pattern.ts` — 値ベース FSM (素朴 + 型付き遷移表) と type-state の棲み分け
+6. `06-type-state-effect-hybrid.ts` — 順序は type-state、エラー / 並行は Effect
 
 ## スライドの結論 (要約)
 

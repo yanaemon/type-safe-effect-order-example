@@ -13,6 +13,7 @@
     "run:03": "tsx src/03-type-state-pattern.ts",
     "run:04": "tsx src/04-type-state-interface-hide.ts",
     "run:05": "tsx src/05-dispatcher-pattern.ts",
+    "run:06": "tsx src/06-type-state-effect-hybrid.ts",
     "run:lib:effect": "tsx src/libraries/effect.ts",
     "run:lib:xstate": "tsx src/libraries/xstate.ts",
     "run:lib:typestate": "tsx src/libraries/typestate.ts",
