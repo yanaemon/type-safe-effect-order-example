@@ -15,6 +15,8 @@
     "run:05": "tsx src/05-runtime-fsm-limitation.ts",
     "run:lib:effect": "tsx src/libraries/effect.ts",
     "run:lib:xstate": "tsx src/libraries/xstate.ts",
+    "run:lib:typestate": "tsx src/libraries/typestate.ts",
+    "run:lib:ts-checked-fsm": "tsx src/libraries/ts-checked-fsm.ts",
     "diff:01": "diff -u src/01-problem.ts compiled/01-problem.js || true",
     "diff:02": "diff -u src/02-phantom-pipeline.ts compiled/02-phantom-pipeline.js || true",
     "diff:03": "diff -u src/03-type-state-pattern.ts compiled/03-type-state-pattern.js || true"
@@ -25,6 +27,8 @@
   },
   "dependencies": {
     "effect": "^3.21.2",
+    "ts-checked-fsm": "^1.1.0",
+    "typestate": "^1.0.6",
     "xstate": "^5.31.1"
   }
 }
