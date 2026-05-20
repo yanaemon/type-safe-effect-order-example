@@ -18,9 +18,9 @@
     "run:lib:xstate": "tsx src/libraries/xstate.ts",
     "run:lib:typestate": "tsx src/libraries/typestate.ts",
     "run:lib:ts-checked-fsm": "tsx src/libraries/ts-checked-fsm.ts",
-    "diff:01": "diff -u src/01-problem.ts compiled/01-problem.js || true",
-    "diff:02": "diff -u src/02-phantom-pipeline.ts compiled/02-phantom-pipeline.js || true",
-    "diff:03": "diff -u src/03-type-state-pattern.ts compiled/03-type-state-pattern.js || true"
+    "diff:01": "diff -u -w src/01-problem.ts compiled/01-problem.js || true",
+    "diff:02": "diff -u -w src/02-phantom-pipeline.ts compiled/02-phantom-pipeline.js || true",
+    "diff:03": "diff -u -w src/03-type-state-pattern.ts compiled/03-type-state-pattern.js || true"
   },
   "devDependencies": {
     "tsx": "^4.19.2",
