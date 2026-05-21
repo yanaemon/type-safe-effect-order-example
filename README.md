@@ -7,7 +7,7 @@ TSKaigi 2026「TypeScript の型で副作用の実行順序を制御する」の
 
 ```
 src/                       ← 本編 (この順で読む)
-├── 01-..06-...ts
+├── 01-..07-...ts
 ├── libraries/             ← 「順序制御の仕組み」を提供するライブラリ (読み順は任意)
 └── usecases/              ← その仕組みで作られた「機能を提供する」ライブラリの例
 compiled/                  ← tsc 出力。src と同じ階層で .js が出る
@@ -30,8 +30,9 @@ tsconfig.json              ← rootDir=src, outDir=compiled
 | 02 | [`src/02-phantom-pipeline.ts`](src/02-phantom-pipeline.ts) | 一次回答: Phantom Pipeline (値の型に「ラベル」を貼る) |
 | 03 | [`src/03-type-state-pattern.ts`](src/03-type-state-pattern.ts) | 本旨: Type-State Pattern (クラスの型パラメータ + `this:` 制約) |
 | 04 | [`src/04-type-state-interface-hide.ts`](src/04-type-state-interface-hide.ts) | 発展: interface + Omit で IDE 補完からも消す |
-| 05 | [`src/05-dispatcher-pattern.ts`](src/05-dispatcher-pattern.ts) | 対比: 値ベース FSM (素朴 + 型付き遷移表)。type-state との棲み分け |
-| 06 | [`src/06-type-state-effect-hybrid.ts`](src/06-type-state-effect-hybrid.ts) | 応用: Type-State × Effect ハイブリッド。順序は型、エラー / 並行は Effect |
+| 05 | [`src/05-type-predicate-pattern.ts`](src/05-type-predicate-pattern.ts) | 橋渡し: `this is X` / `asserts this is X` で runtime → 型へ narrow |
+| 06 | [`src/06-dispatcher-pattern.ts`](src/06-dispatcher-pattern.ts) | 対比: 値ベース FSM (素朴 + 型付き遷移表)。type-state との棲み分け |
+| 07 | [`src/07-type-state-effect-hybrid.ts`](src/07-type-state-effect-hybrid.ts) | 応用: Type-State × Effect ハイブリッド。順序は型、エラー / 並行は Effect |
 
 ### libraries/ — 特定ライブラリでの実装例
 
@@ -69,8 +70,9 @@ pnpm run:01         # 01-problem.ts を実行 (壊れた呼び出し例も含む
 pnpm run:02         # 02-phantom-pipeline.ts
 pnpm run:03         # 03-type-state-pattern.ts
 pnpm run:04         # 04-type-state-interface-hide.ts
-pnpm run:05         # 05-dispatcher-pattern.ts
-pnpm run:06         # 06-type-state-effect-hybrid.ts
+pnpm run:05         # 05-type-predicate-pattern.ts
+pnpm run:06         # 06-dispatcher-pattern.ts
+pnpm run:07         # 07-type-state-effect-hybrid.ts
 
 pnpm run:lib:effect         # libraries/effect.ts
 pnpm run:lib:xstate         # libraries/xstate.ts
@@ -93,8 +95,9 @@ highlight 付きで表示される)。
 2. [`02-phantom-pipeline.ts`](src/02-phantom-pipeline.ts) — 値の型にラベルを貼る一次回答と、その限界
 3. [`03-type-state-pattern.ts`](src/03-type-state-pattern.ts) — 状態 × 振る舞いをクラスに集約する本旨 (`this:` 制約)
 4. [`04-type-state-interface-hide.ts`](src/04-type-state-interface-hide.ts) — interface + Omit で補完からも消す
-5. [`05-dispatcher-pattern.ts`](src/05-dispatcher-pattern.ts) — 値ベース FSM (素朴 + 型付き遷移表) と type-state の棲み分け
-6. [`06-type-state-effect-hybrid.ts`](src/06-type-state-effect-hybrid.ts) — 順序は type-state、エラー / 並行は Effect
+5. [`05-type-predicate-pattern.ts`](src/05-type-predicate-pattern.ts) — `this is X` / `asserts this is X` で runtime と型の橋を架ける
+6. [`06-dispatcher-pattern.ts`](src/06-dispatcher-pattern.ts) — 値ベース FSM (素朴 + 型付き遷移表) と type-state の棲み分け
+7. [`07-type-state-effect-hybrid.ts`](src/07-type-state-effect-hybrid.ts) — 順序は type-state、エラー / 並行は Effect
 
 ## スライドの結論 (要約)
 

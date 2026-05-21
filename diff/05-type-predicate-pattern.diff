@@ -1,0 +1,172 @@
+--- src/05-type-predicate-pattern.ts	2026-05-22 06:55:03
++++ compiled/05-type-predicate-pattern.js	2026-05-22 07:20:28
+@@ -23,19 +23,11 @@
+ // このファイルでは UserService<S> に両方を生やして、union 化した値を
+ // runtime 検査越しに「03 と同じ厳しい型」へ落とすところまでを見る。
+ // =============================================================================
+-
+-type UserData = {
+-    name: string;
+-    age: number;
+-};
+-
+-type State = "draft" | "validated" | "saved";
+-
+-class UserService<S extends State = "draft"> {
+-    private declare readonly _state: S;
+-
+-    constructor(private readonly data: UserData) {}
+-
++class UserService {
++    data;
++    constructor(data) {
++        this.data = data;
++    }
+     // -------------------------------------------------------------------------
+     // 💡 技法 1: Type Predicate を method にする
+     // -------------------------------------------------------------------------
+@@ -47,16 +39,14 @@
+     //
+     // ポイントは「TS が真偽値を信じる」ところ。実装が嘘をついていても、
+     // TS は narrow してしまう。 → 検査関数の中身は信頼境界。
+-    isValidated(): this is UserService<"validated"> {
++    isValidated() {
+         return this.data.name.length > 0 && this.data.age >= 0;
+     }
+-
+-    isSaved(): this is UserService<"saved"> {
++    isSaved() {
+         // 実装は何でもいい (例えば DB 上の保存フラグを見る、など)。
+         // ここでは _state を直接読めない (private declare) ので、簡易ロジックで。
+         return false;
+     }
+-
+     // -------------------------------------------------------------------------
+     // 💡 技法 2: Assertion Function を method にする
+     // -------------------------------------------------------------------------
+@@ -68,24 +58,21 @@
+     //
+     // if 文を書きたくない (= "ここから先は確実に validated" と言い切りたい) 場合は
+     // assertion 版が便利。ただし「真偽値で分岐したい」場合は predicate を使う。
+-    assertValidated(): asserts this is UserService<"validated"> {
++    assertValidated() {
+         if (!this.isValidated()) {
+             throw new Error("not validated");
+         }
+     }
+-
+     // 03 と同じ「呼び出せる状態」の制約。これらは型が validated/saved に
+     // narrow されているときしか呼べない。
+-    async save(this: UserService<"validated">): Promise<UserService<"saved">> {
++    async save() {
+         console.log("[save]   ", this.data.name);
+-        return new UserService<"saved">(this.data);
++        return new UserService(this.data);
+     }
+-
+-    async notify(this: UserService<"saved">): Promise<void> {
++    async notify() {
+         console.log("[notify] ", this.data.name);
+     }
+ }
+-
+ // -----------------------------------------------------------------------------
+ // ユースケース 1: 状態が union な instance を narrow
+ // -----------------------------------------------------------------------------
+@@ -93,89 +80,67 @@
+ // 「draft でも validated でも来る」関数で、validated だったときだけ進めたい。
+ // type predicate を if で使うと、then 枝の `s` が UserService<"validated"> に
+ // narrow される。
+-
+-async function processIfValidated(s: UserService<"draft" | "validated">) {
++async function processIfValidated(s) {
+     if (s.isValidated()) {
+         // この行では s : UserService<"validated">  (union から narrow された)
+         const saved = await s.save();
+         await saved.notify();
+-    } else {
++    }
++    else {
+         console.log("[skip]   not validated");
+     }
+ }
+-
+ // -----------------------------------------------------------------------------
+ // ユースケース 2: assert で「ここから先は確実に validated」を宣言する
+ // -----------------------------------------------------------------------------
+ //
+ // 分岐したくない、validate されていなかったらそもそも続行不能、というケース。
+ // assertValidated() を呼んだ後の行では narrow が効いている。
+-
+-async function processOrThrow(s: UserService<"draft" | "validated">) {
++async function processOrThrow(s) {
+     s.assertValidated();
+     // この行以降では s : UserService<"validated">
+     const saved = await s.save();
+     await saved.notify();
+ }
+-
+-// -----------------------------------------------------------------------------
+-// ユースケース 3: 「外から来た値」を narrow する典型 (DB / JSON / Queue)
+-// -----------------------------------------------------------------------------
+-//
+-// `loadFromAnywhere` は runtime にしか状態が分からない (= union 型で返す)。
+-// この場合、03 の `this:` 制約だけでは進めなくて、predicate / assertion が
+-// 「外の世界と型の世界を繋ぐ」橋渡しになる。
+-
+-declare function loadFromAnywhere(): UserService<State>;
+-
+ async function _externalSourceExample() {
+     const s = loadFromAnywhere(); // UserService<"draft" | "validated" | "saved">
+-
+     if (s.isSaved()) {
+         await s.notify(); // notify は this: UserService<"saved"> なので OK
+         return;
+     }
+-
+     if (s.isValidated()) {
+         const saved = await s.save();
+         await saved.notify();
+         return;
+     }
+-
+     console.log("[skip]   still draft");
+ }
+ void _externalSourceExample;
+-
+ // -----------------------------------------------------------------------------
+ // 動かしてみる
+ // -----------------------------------------------------------------------------
+-
+-const draft: UserService<"draft" | "validated"> = new UserService({
++const draft = new UserService({
+     name: "test",
+     age: 30,
+ });
+ await processIfValidated(draft);
+ await processOrThrow(draft);
+-
+ // -----------------------------------------------------------------------------
+ // ❌ narrow なしで save を呼ぶと止まる
+ // -----------------------------------------------------------------------------
+-
+-async function _typeOnlyExamples(s: UserService<"draft" | "validated">) {
++async function _typeOnlyExamples(s) {
+     // @ts-expect-error  union のままでは save() の this: 制約に合わない
+     await s.save();
+-
+     // ✅ predicate で narrow されたら呼べる
+     // if (s.isValidated()) {
+     //     await s.save();
+     // }
+-
+     // ✅ assertion で narrow されたら呼べる
+     s.assertValidated();
+     await s.save();
+ }
+ void _typeOnlyExamples;
+-
++export {};
+ // -----------------------------------------------------------------------------
+ // 設計上の注意 — predicate / assertion は信頼境界
+ // -----------------------------------------------------------------------------
