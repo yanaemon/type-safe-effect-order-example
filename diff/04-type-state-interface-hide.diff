@@ -1,5 +1,5 @@
 --- src/04-type-state-interface-hide.ts	2026-05-21 00:16:13
-+++ compiled/04-type-state-interface-hide.js	2026-05-22 07:32:45
++++ compiled/04-type-state-interface-hide.js	2026-05-22 07:52:34
 @@ -15,53 +15,32 @@
  //   - `private constructor` + `static create(): Draft` で初期状態を強制
  //   - 03 の phantom field / 型パラメータ default が不要になる

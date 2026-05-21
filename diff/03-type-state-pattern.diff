@@ -1,5 +1,5 @@
 --- src/03-type-state-pattern.ts	2026-05-22 06:44:53
-+++ compiled/03-type-state-pattern.js	2026-05-22 07:32:45
++++ compiled/03-type-state-pattern.js	2026-05-22 07:52:34
 @@ -12,43 +12,29 @@
  //   - phantom field "_state" は `declare` で「型だけ」の存在に
  //     (= コンパイル後の JS からは消える / pnpm diff:03 で実物が見られる)
