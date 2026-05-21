@@ -1,0 +1,17 @@
+compiled/08-type-state-typelevel-schedule.js
+  ai_agent 1-166
+diff/08-type-state-typelevel-schedule.diff
+  ai_agent 1-186
+README.md
+  ai_agent 10,36,77,103
+package.json
+  ai_agent 20
+src/08-type-state-typelevel-schedule.ts
+  ai_agent 1-268
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "75d61a30c1deae6cebc606f79ba3a7e69f271de2",
+  "prompts": {}
+}
