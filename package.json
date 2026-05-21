@@ -33,6 +33,7 @@
     "dependencies": {
         "effect": "^3.21.2",
         "kysely": "^0.29.2",
+        "neverthrow": "^8.2.0",
         "ts-checked-fsm": "^1.1.0",
         "typestate": "^1.0.6",
         "xstate": "^5.31.1",
