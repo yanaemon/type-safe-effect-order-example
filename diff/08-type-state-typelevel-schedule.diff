@@ -1,0 +1,186 @@
+--- src/08-type-state-typelevel-schedule.ts	2026-05-22 07:19:32
++++ compiled/08-type-state-typelevel-schedule.js	2026-05-22 07:20:28
+@@ -32,28 +32,7 @@
+ //   - 条件分岐 / 並行 / リトライ まで型に乗せたくなると Free Monad / Effect の
+ //     世界に近づき、軽量さの利点が消える (= その時は素直に Effect を使う)
+ // =============================================================================
+-
+-type UserData = {
+-    name: string;
+-    age: number;
+-};
+-
+-type State = "draft" | "validated" | "saved" | "notified";
+-
+ // -----------------------------------------------------------------------------
+-// 1) Step は「副作用の記述」── data であって execution ではない
+-// -----------------------------------------------------------------------------
+-//
+-// 各 Step は discriminated union のメンバ。`type` フィールドで何の作用かを、
+-// 残りのフィールドで作用に必要なペイロードを持つ。
+-// .run() の中の interpreter がこの type で分岐して、実際の副作用を起こす。
+-
+-type ValidateStep = { readonly type: "validate"; readonly data: UserData };
+-type SaveStep = { readonly type: "save"; readonly data: UserData };
+-type NotifyStep = { readonly type: "notify"; readonly data: UserData };
+-type Step = ValidateStep | SaveStep | NotifyStep;
+-
+-// -----------------------------------------------------------------------------
+ // 2) Program<S, Steps> ── 状態 + 積み上がった schedule
+ // -----------------------------------------------------------------------------
+ //
+@@ -64,50 +43,33 @@
+ // チェインメソッドは
+ //   Program<前の状態, Steps> -> Program<次の状態, readonly [...Steps, このメソッドの Step]>
+ // と、両方の型パラメータを同時に進化させる。
+-
+-class Program<S extends State, Steps extends readonly Step[]> {
+-    private declare readonly _state: S;
+-
+-    private constructor(
+-        private readonly data: UserData,
+-        private readonly steps: Steps,
+-    ) {}
+-
++class Program {
++    data;
++    steps;
++    constructor(data, steps) {
++        this.data = data;
++        this.steps = steps;
++    }
+     // 初期状態は draft、Steps は空タプル
+-    static start(data: UserData): Program<"draft", readonly []> {
+-        return new Program<"draft", readonly []>(data, []);
++    static start(data) {
++        return new Program(data, []);
+     }
+-
+-    validate(
+-        this: Program<"draft", Steps>,
+-    ): Program<"validated", readonly [...Steps, ValidateStep]> {
+-        const step: ValidateStep = { type: "validate", data: this.data };
++    validate() {
++        const step = { type: "validate", data: this.data };
+         // runtime はただの配列 push。型シグネチャ側でタプルとして見せる
+-        return new Program(this.data, [...this.steps, step]) as Program<
+-            "validated",
+-            readonly [...Steps, ValidateStep]
+-        >;
++        return new Program(this.data, [...this.steps, step]);
+     }
+-
+-    save(this: Program<"validated", Steps>): Program<"saved", readonly [...Steps, SaveStep]> {
+-        const step: SaveStep = { type: "save", data: this.data };
+-        return new Program(this.data, [...this.steps, step]) as Program<
+-            "saved",
+-            readonly [...Steps, SaveStep]
+-        >;
++    save() {
++        const step = { type: "save", data: this.data };
++        return new Program(this.data, [...this.steps, step]);
+     }
+-
+-    notify(this: Program<"saved", Steps>): Program<"notified", readonly [...Steps, NotifyStep]> {
+-        const step: NotifyStep = { type: "notify", data: this.data };
+-        return new Program(this.data, [...this.steps, step]) as Program<
+-            "notified",
+-            readonly [...Steps, NotifyStep]
+-        >;
++    notify() {
++        const step = { type: "notify", data: this.data };
++        return new Program(this.data, [...this.steps, step]);
+     }
+-
+     // .run() は「最終状態 = notified」に到達した Program だけが呼べる。
+     // partial な (途中の) Program は型で弾かれる。
+-    async run(this: Program<"notified", Steps>): Promise<void> {
++    async run() {
+         for (const step of this.steps) {
+             switch (step.type) {
+                 case "validate":
+@@ -128,79 +90,39 @@
+         }
+     }
+ }
+-
+ // -----------------------------------------------------------------------------
+ // 3) 組み立て: チェインを書いた瞬間に schedule が型に乗る
+ // -----------------------------------------------------------------------------
+-
+ const program = Program.start({ name: "test", age: 30 }).validate().save().notify();
+-//    ^? Program<"notified", readonly [ValidateStep, SaveStep, NotifyStep]>
+-
+-// -----------------------------------------------------------------------------
+-// 4) 「実行前に schedule を型で覗く」道具 (inspector 型)
+-// -----------------------------------------------------------------------------
+-//
+-// Steps はタプル型なので、conditional types で自由に操作できる。
+-// 例: 「何ステップ?」「最後の Step は?」「save を含むか?」など、
+-// すべて compile-time に確定する。
+-
+-type ScheduleOf<P> = P extends Program<infer _S, infer Steps> ? Steps : never;
+-type StepCount<P> = ScheduleOf<P>["length"];
+-type LastStep<P> = ScheduleOf<P> extends readonly [...infer _, infer L] ? L : never;
+-type IncludesNotify<P> =
+-    ScheduleOf<P> extends readonly (infer U)[] ? (NotifyStep extends U ? true : false) : false;
+-
+-// 動作確認 (compile-time のみ。値レベルでは使われない)
+-type _Schedule = ScheduleOf<typeof program>;
+-//   ^? readonly [ValidateStep, SaveStep, NotifyStep]
+-type _Count = StepCount<typeof program>;
+-//   ^? 3
+-type _Last = LastStep<typeof program>;
+-//   ^? NotifyStep
+-type _HasNotify = IncludesNotify<typeof program>;
+-//   ^? true
+-
+-// inspector が嘘をついていないか、AssertEq で固める
+-type AssertEq<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+-type _Check1 = AssertEq<_Schedule, readonly [ValidateStep, SaveStep, NotifyStep]>;
+-type _Check2 = AssertEq<_Count, 3>;
+-type _Check3 = AssertEq<_Last, NotifyStep>;
+-type _Check4 = AssertEq<_HasNotify, true>;
+ void [
+-    null as unknown as _Check1,
+-    null as unknown as _Check2,
+-    null as unknown as _Check3,
+-    null as unknown as _Check4,
++    null,
++    null,
++    null,
++    null,
+ ];
+-
+ // -----------------------------------------------------------------------------
+ // 5) 実行
+ // -----------------------------------------------------------------------------
+-
+ console.log("--- run schedule ---");
+ await program.run();
+-
+ // -----------------------------------------------------------------------------
+ // 6) ❌ 型で止まるパターン
+ // -----------------------------------------------------------------------------
+-
+ async function _typeOnlyExamples() {
+     // (a) 順序ミス: 03 と同じく this 制約で弾かれる
+     const draft = Program.start({ name: "x", age: 1 });
+     // @ts-expect-error  validate 前に save は呼べない
+     draft.save();
+-
+     // (b) 部分プログラムは run できない
+     const partial = Program.start({ name: "x", age: 1 }).validate().save();
+     // partial: Program<"saved", readonly [ValidateStep, SaveStep]>
+     // @ts-expect-error  "notified" でないと run() の this 制約に合わない
+     await partial.run();
+-
+     // (c) 完成しても、状態が違うものに無理矢理 run はさせない
+     // (型レベルで Steps が違うのは OK。状態 S が "notified" であることが run の条件)
+ }
+ void _typeOnlyExamples;
+-
++export {};
+ // -----------------------------------------------------------------------------
+ // 7) ここまでで分かること
+ // -----------------------------------------------------------------------------

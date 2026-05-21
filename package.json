@@ -17,6 +17,7 @@
         "run:05": "tsx src/05-type-predicate-pattern.ts",
         "run:06": "tsx src/06-dispatcher-pattern.ts",
         "run:07": "tsx src/07-type-state-effect-hybrid.ts",
+        "run:08": "tsx src/08-type-state-typelevel-schedule.ts",
         "run:lib:effect": "tsx src/libraries/effect.ts",
         "run:lib:xstate": "tsx src/libraries/xstate.ts",
         "run:lib:typestate": "tsx src/libraries/typestate.ts",
