@@ -8,7 +8,8 @@ TSKaigi 2026「TypeScript の型で副作用の実行順序を制御する」の
 ```
 src/                       ← 本編 (この順で読む)
 ├── 01-..06-...ts
-└── libraries/             ← 特定ライブラリでの実装例 (読み順は任意)
+├── libraries/             ← 「順序制御の仕組み」を提供するライブラリ (読み順は任意)
+└── usecases/              ← その仕組みで作られた「機能を提供する」ライブラリの例
 compiled/                  ← tsc 出力。src と同じ階層で .js が出る
 diff/                      ← src vs compiled の差分スナップショット (GitHub で読める)
 tsconfig.json              ← rootDir=src, outDir=compiled
@@ -41,6 +42,16 @@ tsconfig.json              ← rootDir=src, outDir=compiled
 | typestate      | [`src/libraries/typestate.ts`](src/libraries/typestate.ts)           | 軽量 runtime FSM。不正遷移は throw (xstate の no-op と対照的) |
 | ts-checked-fsm | [`src/libraries/ts-checked-fsm.ts`](src/libraries/ts-checked-fsm.ts) | FSM 定義そのものを compile-time で検証する。runtime dispatch は no-op |
 
+### usecases/ — 仕組みを使って「別の機能」を提供しているライブラリ
+
+`libraries/` が「順序や状態を扱う仕組みそのもの」を売っているのに対し、
+`usecases/` は「内部でその仕組みを使って、別の機能を提供している」ライブラリを並べる。
+状態や型がどう運ばれて値の到達点を保証しているのか、実利用例と共に解説する。
+
+| ライブラリ | ファイル | 提供している機能 / 内部で使っている仕組み |
+|---|---|---|
+| zod | [`src/usecases/zod.ts`](src/usecases/zod.ts) | スキーマバリデーション / `$ZodType<Output, Input>` という phantom 型パイプライン (本編 02 の一般化)。`parse()` は `unknown → 検証済み型` への状態遷移、`.brand()` は明示的な phantom タグ |
+
 各ファイルには `@ts-expect-error` 付きの「これは型エラーになる」例も入っている。
 `pnpm typecheck` (or `npm run typecheck`) すれば、`@ts-expect-error` がちゃんと
 エラーを抑えていること = エラーが起きていることが確認できる。
@@ -64,6 +75,8 @@ pnpm run:lib:effect         # libraries/effect.ts
 pnpm run:lib:xstate         # libraries/xstate.ts
 pnpm run:lib:typestate      # libraries/typestate.ts
 pnpm run:lib:ts-checked-fsm # libraries/ts-checked-fsm.ts
+
+pnpm run:usecase:zod        # usecases/zod.ts
 
 pnpm diff:gen       # diff/ に src vs compiled の差分スナップショットを再生成
                     # (pnpm build に含まれているので普段は意識しなくて OK)
