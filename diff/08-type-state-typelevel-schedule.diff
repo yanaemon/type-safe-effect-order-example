@@ -1,8 +1,8 @@
---- src/08-type-state-typelevel-schedule.ts	2026-05-22 07:19:32
-+++ compiled/08-type-state-typelevel-schedule.js	2026-05-22 07:20:28
-@@ -32,28 +32,7 @@
- //   - 条件分岐 / 並行 / リトライ まで型に乗せたくなると Free Monad / Effect の
- //     世界に近づき、軽量さの利点が消える (= その時は素直に Effect を使う)
+--- src/08-type-state-typelevel-schedule.ts	2026-05-22 07:26:25
++++ compiled/08-type-state-typelevel-schedule.js	2026-05-22 07:26:43
+@@ -38,42 +38,7 @@
+ //   - for ループや if 分岐で動的に積むとタプルが配列 union に潰れて恩恵消失
+ //   - 並行 / キャンセル / リトライまで型に乗せたくなると Effect の世界へ
  // =============================================================================
 -
 -type UserData = {
@@ -10,70 +10,98 @@
 -    age: number;
 -};
 -
--type State = "draft" | "validated" | "saved" | "notified";
--
  // -----------------------------------------------------------------------------
--// 1) Step は「副作用の記述」── data であって execution ではない
+-// 1) Step 群 ── 副作用の記述データ
 -// -----------------------------------------------------------------------------
 -//
--// 各 Step は discriminated union のメンバ。`type` フィールドで何の作用かを、
--// 残りのフィールドで作用に必要なペイロードを持つ。
--// .run() の中の interpreter がこの type で分岐して、実際の副作用を起こす。
+-// discriminated union のメンバ。`type` フィールドで何の作用か、残りのフィールド
+-// でその作用に必要なペイロードを持つ。.run() の interpreter がこの type で
+-// 分岐して、実際の副作用を起こす。
 -
 -type ValidateStep = { readonly type: "validate"; readonly data: UserData };
 -type SaveStep = { readonly type: "save"; readonly data: UserData };
 -type NotifyStep = { readonly type: "notify"; readonly data: UserData };
--type Step = ValidateStep | SaveStep | NotifyStep;
+-// ↓ 「中間に挟まる」neutral な step の例 (前提なし、何にも影響しない)
+-type LogStep = { readonly type: "log"; readonly message: string };
+-type Step = ValidateStep | SaveStep | NotifyStep | LogStep;
 -
 -// -----------------------------------------------------------------------------
- // 2) Program<S, Steps> ── 状態 + 積み上がった schedule
+-// 2) 型レベル「履歴に X が含まれるか?」
+-// -----------------------------------------------------------------------------
+-//
+-//   Steps[number]  : タプルの要素を全部 union 化 (例: ValidateStep | SaveStep)
+-//   Extract<U, T>  : union から T に合致する要素だけ抽出
+-//   ... extends never ? false : true  : 抽出結果が空なら false、あれば true
+-//
+-// Steps が空タプル `[]` のとき Steps[number] は never。Extract<never, X> も never
+-// になるので、Has<[], X> は false に縮約する (= 当然「何も履歴に無い」)。
+-
+-type Has<Steps extends readonly Step[], T extends Step> =
+-    Extract<Steps[number], T> extends never ? false : true;
+-
+-// -----------------------------------------------------------------------------
+ // 3) Program<Steps> ── 状態は持たない (= 履歴がそのまま状態)
  // -----------------------------------------------------------------------------
  //
-@@ -64,50 +43,33 @@
+@@ -83,63 +48,44 @@
  // チェインメソッドは
- //   Program<前の状態, Steps> -> Program<次の状態, readonly [...Steps, このメソッドの Step]>
- // と、両方の型パラメータを同時に進化させる。
+ //   Program<Steps> -> Program<readonly [...Steps, この操作の Step]>
+ // と、履歴の末尾に追記する形で型を進化させる。
 -
--class Program<S extends State, Steps extends readonly Step[]> {
--    private declare readonly _state: S;
--
+-class Program<Steps extends readonly Step[]> {
 -    private constructor(
 -        private readonly data: UserData,
 -        private readonly steps: Steps,
 -    ) {}
 -
+-    static start(data: UserData): Program<readonly []> {
+-        return new Program<readonly []>(data, []);
 +class Program {
 +    data;
 +    steps;
 +    constructor(data, steps) {
 +        this.data = data;
 +        this.steps = steps;
-+    }
-     // 初期状態は draft、Steps は空タプル
--    static start(data: UserData): Program<"draft", readonly []> {
--        return new Program<"draft", readonly []>(data, []);
-+    static start(data) {
-+        return new Program(data, []);
      }
 -
--    validate(
--        this: Program<"draft", Steps>,
--    ): Program<"validated", readonly [...Steps, ValidateStep]> {
++    static start(data) {
++        return new Program(data, []);
++    }
+     // ---- 前提なしで呼べる step --------------------------------------------
+-
+     // validate は前提なし (= 最初に呼ぶ前提)
+-    validate(): Program<readonly [...Steps, ValidateStep]> {
 -        const step: ValidateStep = { type: "validate", data: this.data };
-+    validate() {
-+        const step = { type: "validate", data: this.data };
-         // runtime はただの配列 push。型シグネチャ側でタプルとして見せる
 -        return new Program(this.data, [...this.steps, step]) as Program<
--            "validated",
 -            readonly [...Steps, ValidateStep]
 -        >;
++    validate() {
++        const step = { type: "validate", data: this.data };
 +        return new Program(this.data, [...this.steps, step]);
      }
 -
--    save(this: Program<"validated", Steps>): Program<"saved", readonly [...Steps, SaveStep]> {
+     // log は前提なし。中間にいくらでも挟める neutral な step
+-    log(message: string): Program<readonly [...Steps, LogStep]> {
+-        const step: LogStep = { type: "log", message };
+-        return new Program(this.data, [...this.steps, step]) as Program<
+-            readonly [...Steps, LogStep]
+-        >;
++    log(message) {
++        const step = { type: "log", message };
++        return new Program(this.data, [...this.steps, step]);
+     }
+-
+     // ---- 履歴 gate 付きの step --------------------------------------------
+     //
+     // `this:` 制約を conditional type にする。前提が満たされていなければ
+     // this の型が `never` になり、そもそも呼べなくなる。
+-
+     // save: 履歴に validate が「どこかに」あれば呼べる
+-    save(
+-        this: Has<Steps, ValidateStep> extends true ? Program<Steps> : never,
+-    ): Program<readonly [...Steps, SaveStep]> {
 -        const step: SaveStep = { type: "save", data: this.data };
 -        return new Program(this.data, [...this.steps, step]) as Program<
--            "saved",
 -            readonly [...Steps, SaveStep]
 -        >;
 +    save() {
@@ -81,10 +109,12 @@
 +        return new Program(this.data, [...this.steps, step]);
      }
 -
--    notify(this: Program<"saved", Steps>): Program<"notified", readonly [...Steps, NotifyStep]> {
+     // notify: 履歴に save が「どこかに」あれば呼べる
+-    notify(
+-        this: Has<Steps, SaveStep> extends true ? Program<Steps> : never,
+-    ): Program<readonly [...Steps, NotifyStep]> {
 -        const step: NotifyStep = { type: "notify", data: this.data };
 -        return new Program(this.data, [...this.steps, step]) as Program<
--            "notified",
 -            readonly [...Steps, NotifyStep]
 -        >;
 +    notify() {
@@ -92,66 +122,40 @@
 +        return new Program(this.data, [...this.steps, step]);
      }
 -
-     // .run() は「最終状態 = notified」に到達した Program だけが呼べる。
-     // partial な (途中の) Program は型で弾かれる。
--    async run(this: Program<"notified", Steps>): Promise<void> {
+     // ---- 実行 --------------------------------------------------------------
+     // .run() は「履歴に notify がある」= 全工程に到達した program だけ呼べる
+-    async run(this: Has<Steps, NotifyStep> extends true ? Program<Steps> : never): Promise<void> {
 +    async run() {
          for (const step of this.steps) {
              switch (step.type) {
                  case "validate":
-@@ -128,79 +90,39 @@
+@@ -161,53 +107,35 @@
          }
      }
  }
 -
  // -----------------------------------------------------------------------------
- // 3) 組み立て: チェインを書いた瞬間に schedule が型に乗る
+ // 4) 中間 step を挟んでもチェインが繋がる (= 元の質問の答え)
  // -----------------------------------------------------------------------------
 -
- const program = Program.start({ name: "test", age: 30 }).validate().save().notify();
--//    ^? Program<"notified", readonly [ValidateStep, SaveStep, NotifyStep]>
+ const program = Program.start({ name: "test", age: 30 })
+     .validate()
+     .log("validated; about to save") // ← 中間 step が挟まる
+     .save() //                                 ← 直前は log だが validate は履歴にある → 呼べる
+     .log("saved; about to notify") // ← また中間 step
+     .notify(); //                              ← 直前は log だが save は履歴にある → 呼べる
 -
--// -----------------------------------------------------------------------------
--// 4) 「実行前に schedule を型で覗く」道具 (inspector 型)
--// -----------------------------------------------------------------------------
--//
--// Steps はタプル型なので、conditional types で自由に操作できる。
--// 例: 「何ステップ?」「最後の Step は?」「save を含むか?」など、
--// すべて compile-time に確定する。
--
--type ScheduleOf<P> = P extends Program<infer _S, infer Steps> ? Steps : never;
--type StepCount<P> = ScheduleOf<P>["length"];
--type LastStep<P> = ScheduleOf<P> extends readonly [...infer _, infer L] ? L : never;
--type IncludesNotify<P> =
--    ScheduleOf<P> extends readonly (infer U)[] ? (NotifyStep extends U ? true : false) : false;
--
--// 動作確認 (compile-time のみ。値レベルでは使われない)
+-// inspector: schedule が型に乗っているのを確認
 -type _Schedule = ScheduleOf<typeof program>;
--//   ^? readonly [ValidateStep, SaveStep, NotifyStep]
--type _Count = StepCount<typeof program>;
--//   ^? 3
--type _Last = LastStep<typeof program>;
--//   ^? NotifyStep
--type _HasNotify = IncludesNotify<typeof program>;
--//   ^? true
+-//   ^? readonly [ValidateStep, LogStep, SaveStep, LogStep, NotifyStep]
 -
--// inspector が嘘をついていないか、AssertEq で固める
+-type ScheduleOf<P> = P extends Program<infer Steps> ? Steps : never;
 -type AssertEq<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
--type _Check1 = AssertEq<_Schedule, readonly [ValidateStep, SaveStep, NotifyStep]>;
--type _Check2 = AssertEq<_Count, 3>;
--type _Check3 = AssertEq<_Last, NotifyStep>;
--type _Check4 = AssertEq<_HasNotify, true>;
- void [
--    null as unknown as _Check1,
--    null as unknown as _Check2,
--    null as unknown as _Check3,
--    null as unknown as _Check4,
-+    null,
-+    null,
-+    null,
-+    null,
- ];
 -
+-type _Check = AssertEq<_Schedule, readonly [ValidateStep, LogStep, SaveStep, LogStep, NotifyStep]>;
+-void (null as unknown as _Check);
+-
++void null;
  // -----------------------------------------------------------------------------
  // 5) 実行
  // -----------------------------------------------------------------------------
@@ -164,23 +168,28 @@
  // -----------------------------------------------------------------------------
 -
  async function _typeOnlyExamples() {
-     // (a) 順序ミス: 03 と同じく this 制約で弾かれる
-     const draft = Program.start({ name: "x", age: 1 });
-     // @ts-expect-error  validate 前に save は呼べない
-     draft.save();
+     // (a) validate を通さずに save → 履歴に ValidateStep が無いので this: never
+     // @ts-expect-error  validate していない program では save が呼べない
+     Program.start({ name: "x", age: 1 }).save();
 -
-     // (b) 部分プログラムは run できない
+     // (b) save を通さずに notify → 履歴に SaveStep が無いので this: never
+     // @ts-expect-error  save していない program では notify が呼べない
+     Program.start({ name: "x", age: 1 }).validate().notify();
+-
+     // (c) 完成前に run → 履歴に NotifyStep が無いので this: never
      const partial = Program.start({ name: "x", age: 1 }).validate().save();
-     // partial: Program<"saved", readonly [ValidateStep, SaveStep]>
-     // @ts-expect-error  "notified" でないと run() の this 制約に合わない
+     // @ts-expect-error  notify していない program は run できない
      await partial.run();
 -
-     // (c) 完成しても、状態が違うものに無理矢理 run はさせない
-     // (型レベルで Steps が違うのは OK。状態 S が "notified" であることが run の条件)
+     // (d) ✅ 中間 log を挟んでも save / notify は通る
+     const ok = Program.start({ name: "x", age: 1 })
+         .validate()
+@@ -219,7 +147,7 @@
+     await ok.run();
  }
  void _typeOnlyExamples;
 -
 +export {};
  // -----------------------------------------------------------------------------
- // 7) ここまでで分かること
+ // 7) ここまでの設計上のポイント
  // -----------------------------------------------------------------------------

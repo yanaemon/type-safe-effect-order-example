@@ -1,42 +1,14 @@
---- src/06-dispatcher-pattern.ts	2026-05-22 00:36:53
-+++ compiled/06-dispatcher-pattern.js	2026-05-22 07:20:28
-@@ -5,50 +5,8 @@
-         saving: { on: { START: "validated", DONE: "saved" } },
-         notifying: { on: { START: "saved", DONE: "notified" } },
-     },
--} as const;
--
--// 💡 Point 3. conditional types + infer で遷移グラフを辿る
--type NextState<
--    S extends keyof typeof config.states,
--    E extends keyof (typeof config.states)[S]["on"],
--> = (typeof config.states)[S]["on"][E];
--type ValidateStartState = NextState<"validating", "START">; // "draft"  ← 遷移を型レベルで解決
--type ValidateResultState = NextState<"validating", "START">; // "draft"  ← 遷移を型レベルで解決
--
--// =============================================================================
--// 06. Dispatcher Pattern — 値ベース FSM に型を載せられるか？
--// =============================================================================
--//
--// 03 / 04 (type-state) は「状態を class / 型に閉じ込めて、メソッド呼び出し =
--// 遷移」だった。dispatcher はその逆: 状態は値、遷移は dispatch(state, event)
--// 関数。runtime の汎用 FSM ライブラリがやっていることの最小版。
--//
--// 結論を先に: dispatch ロジック自体は runtime コードでしか書けないが、
--// 遷移表を「型の値」として持てば、呼び出し側に compile-time の順序制約は
--// 乗せられる (= ts-checked-fsm 系の中身)。ただし state が runtime ソース
--// (DB / queue / `let s: State`) を経由した瞬間に kind が union 化して効か
--// なくなる、という限界もある。
--//
--// このファイルでは 2 段階で示す:
--//   (A) 素朴な値ベース FSM   — 不正遷移は runtime で no-op (型では止められない)
--//   (B) 遷移表を型に持つ版   — 不正遷移を compile-time に止める
--// =============================================================================
+--- src/06-dispatcher-pattern.ts	2026-05-22 07:22:52
++++ compiled/06-dispatcher-pattern.js	2026-05-22 07:26:43
+@@ -16,22 +16,7 @@
+ //   (A) 素朴な値ベース FSM   — 不正遷移は runtime で no-op (型では止められない)
+ //   (B) 遷移表を型に持つ版   — 不正遷移を compile-time に止める
+ // =============================================================================
 -
 -type UserData = {
 -    name: string;
 -    age: number;
- };
+-};
 -
 -// -----------------------------------------------------------------------------
 -// (A) 素朴な値ベース FSM
@@ -52,7 +24,7 @@
      switch (state) {
          case "draft":
              if (event === "VALIDATE") {
-@@ -67,48 +25,20 @@
+@@ -50,48 +35,20 @@
              return state;
      }
  }
@@ -105,7 +77,7 @@
      if (state.kind === "draft" && event.type === "VALIDATE") {
          console.log("[validate]", state.data.name);
          if (state.data.name.length === 0 || state.data.age < 0) {
-@@ -127,9 +57,8 @@
+@@ -110,9 +67,8 @@
      // 型システム上は到達不能だが、runtime の保険として残しておく
      throw new Error(`invalid transition: ${state.kind} + ${event.type}`);
  }
@@ -116,7 +88,7 @@
      kind: "draft",
      data: { name: "test", age: 30 },
  };
-@@ -137,20 +66,17 @@
+@@ -120,20 +76,17 @@
  const s2 = await dispatchTyped(s1, { type: "SAVE" }); // TypedState<"saved">
  const s3 = await dispatchTyped(s2, { type: "NOTIFY" }); // TypedState<"saved">
  void s3;
@@ -138,7 +110,7 @@
  // -----------------------------------------------------------------------------
  // (B) の限界
  // -----------------------------------------------------------------------------
-@@ -165,7 +91,6 @@
+@@ -148,7 +101,6 @@
  // 結果として (B) の compile-time チェックは「state.kind が値レベルで literal
  // として残っている範囲」でしか効かない。DB / queue / for ループのように
  // 「kind が runtime にしか分からない」使い方では (A) と同じ状況に縮退する。
@@ -146,7 +118,7 @@
  // -----------------------------------------------------------------------------
  // 03 / 04 (type-state) との比較
  // -----------------------------------------------------------------------------
-@@ -178,7 +103,6 @@
+@@ -161,7 +113,6 @@
  // 状態の観測         しづらい (型に閉じる)     | 簡単 (値だから)
  // 永続化             JSON にしづらい           | JSON にしやすい (kind + payload)
  // for / switch 親和  ✅                         | ❌ (union 化で型が崩れる)

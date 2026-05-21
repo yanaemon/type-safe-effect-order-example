@@ -1,11 +1,21 @@
-// 💡 Point 1. as const で config を literal に固定
-const config = {
-    states: {
-        validating: { on: { START: "draft", DONE: "validated" } },
-        saving: { on: { START: "validated", DONE: "saved" } },
-        notifying: { on: { START: "saved", DONE: "notified" } },
-    },
-};
+// =============================================================================
+// 06. Dispatcher Pattern — 値ベース FSM に型を載せられるか？
+// =============================================================================
+//
+// 03 / 04 (type-state) は「状態を class / 型に閉じ込めて、メソッド呼び出し =
+// 遷移」だった。dispatcher はその逆: 状態は値、遷移は dispatch(state, event)
+// 関数。runtime の汎用 FSM ライブラリがやっていることの最小版。
+//
+// 結論を先に: dispatch ロジック自体は runtime コードでしか書けないが、
+// 遷移表を「型の値」として持てば、呼び出し側に compile-time の順序制約は
+// 乗せられる (= ts-checked-fsm 系の中身)。ただし state が runtime ソース
+// (DB / queue / `let s: State`) を経由した瞬間に kind が union 化して効か
+// なくなる、という限界もある。
+//
+// このファイルでは 2 段階で示す:
+//   (A) 素朴な値ベース FSM   — 不正遷移は runtime で no-op (型では止められない)
+//   (B) 遷移表を型に持つ版   — 不正遷移を compile-time に止める
+// =============================================================================
 function dispatch(state, event) {
     switch (state) {
         case "draft":
