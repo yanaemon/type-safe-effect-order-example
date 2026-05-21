@@ -84,3 +84,4 @@ void _typeOnlyExamples;
 //   → 04-type-state-interface-hide.ts (interface + Omit でメソッドを型から消す)
 //
 // 次: 04-type-state-interface-hide.ts で interface ベースの hide を見る
+

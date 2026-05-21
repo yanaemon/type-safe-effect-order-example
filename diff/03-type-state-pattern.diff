@@ -1,5 +1,5 @@
---- src/03-type-state-pattern.ts	2026-05-21 00:15:33
-+++ compiled/03-type-state-pattern.js	2026-05-21 00:23:29
+--- src/03-type-state-pattern.ts	2026-05-22 06:44:53
++++ compiled/03-type-state-pattern.js	2026-05-22 07:26:43
 @@ -12,43 +12,29 @@
  //   - phantom field "_state" は `declare` で「型だけ」の存在に
  //     (= コンパイル後の JS からは消える / pnpm diff:03 で実物が見られる)
@@ -75,3 +75,8 @@
  // 結論:
  //   - 値の型に貼っていたラベルが、クラスの型パラメータに昇格した
  //   - 「状態」と「その状態で呼べる振る舞い」が同じ箱に同居
+@@ -84,4 +68,3 @@
+ //   → 04-type-state-interface-hide.ts (interface + Omit でメソッドを型から消す)
+ //
+ // 次: 04-type-state-interface-hide.ts で interface ベースの hide を見る
+-
