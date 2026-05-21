@@ -1,0 +1,21 @@
+diff/04-type-state-interface-hide.diff
+  ai_agent 2
+diff/06-dispatcher-pattern.diff
+  ai_agent 2
+diff/05-type-predicate-pattern.diff
+  ai_agent 2
+diff/07-type-state-effect-hybrid.diff
+  ai_agent 2
+diff/03-type-state-pattern.diff
+  ai_agent 2
+diff/01-problem.diff
+  ai_agent 2
+diff/02-phantom-pipeline.diff
+  ai_agent 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "c837e5f4d5dae8ce40f36470c2592bd30b8577a2",
+  "prompts": {}
+}
