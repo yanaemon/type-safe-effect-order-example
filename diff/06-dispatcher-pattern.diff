@@ -1,5 +1,5 @@
 --- src/06-dispatcher-pattern.ts	2026-05-22 07:22:52
-+++ compiled/06-dispatcher-pattern.js	2026-05-22 07:26:43
++++ compiled/06-dispatcher-pattern.js	2026-05-22 07:32:45
 @@ -16,22 +16,7 @@
  //   (A) 素朴な値ベース FSM   — 不正遷移は runtime で no-op (型では止められない)
  //   (B) 遷移表を型に持つ版   — 不正遷移を compile-time に止める

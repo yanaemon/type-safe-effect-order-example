@@ -1,5 +1,5 @@
 --- src/05-type-predicate-pattern.ts	2026-05-22 06:55:03
-+++ compiled/05-type-predicate-pattern.js	2026-05-22 07:26:43
++++ compiled/05-type-predicate-pattern.js	2026-05-22 07:32:45
 @@ -23,19 +23,11 @@
  // このファイルでは UserService<S> に両方を生やして、union 化した値を
  // runtime 検査越しに「03 と同じ厳しい型」へ落とすところまでを見る。
