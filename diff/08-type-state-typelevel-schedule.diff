@@ -1,6 +1,6 @@
---- src/08-type-state-typelevel-schedule.ts	2026-05-22 07:26:25
-+++ compiled/08-type-state-typelevel-schedule.js	2026-05-22 07:26:43
-@@ -38,42 +38,7 @@
+--- src/08-type-state-typelevel-schedule.ts	2026-05-22 07:32:31
++++ compiled/08-type-state-typelevel-schedule.js	2026-05-22 07:32:45
+@@ -41,44 +41,7 @@
  //   - for ループや if 分岐で動的に積むとタプルが配列 union に潰れて恩恵消失
  //   - 並行 / キャンセル / リトライまで型に乗せたくなると Effect の世界へ
  // =============================================================================
@@ -11,18 +11,20 @@
 -};
 -
  // -----------------------------------------------------------------------------
--// 1) Step 群 ── 副作用の記述データ
+-// 1) Step 群 ── 「タグ + 自分自身を実行する関数」
 -// -----------------------------------------------------------------------------
 -//
--// discriminated union のメンバ。`type` フィールドで何の作用か、残りのフィールド
--// でその作用に必要なペイロードを持つ。.run() の interpreter がこの type で
--// 分岐して、実際の副作用を起こす。
+-// discriminator `type` は「Has<Steps, ValidateStep> 的な型レベル検査」用、
+-// `fn` は「実行時に呼ばれるクロージャ」。各 step 追加メソッドが fn を組み立てて
+-// タプルに push する。run() 側は中央 switch を持たず、fn を順番に呼ぶだけ。
 -
--type ValidateStep = { readonly type: "validate"; readonly data: UserData };
--type SaveStep = { readonly type: "save"; readonly data: UserData };
--type NotifyStep = { readonly type: "notify"; readonly data: UserData };
--// ↓ 「中間に挟まる」neutral な step の例 (前提なし、何にも影響しない)
--type LogStep = { readonly type: "log"; readonly message: string };
+-type StepFn = () => Promise<void>;
+-
+-type ValidateStep = { readonly type: "validate"; readonly fn: StepFn };
+-type SaveStep = { readonly type: "save"; readonly fn: StepFn };
+-type NotifyStep = { readonly type: "notify"; readonly fn: StepFn };
+-// ↓ 中間に挟まる neutral な step の例 (前提なし)
+-type LogStep = { readonly type: "log"; readonly fn: StepFn };
 -type Step = ValidateStep | SaveStep | NotifyStep | LogStep;
 -
 -// -----------------------------------------------------------------------------
@@ -43,15 +45,23 @@
  // 3) Program<Steps> ── 状態は持たない (= 履歴がそのまま状態)
  // -----------------------------------------------------------------------------
  //
-@@ -83,63 +48,44 @@
+@@ -88,40 +51,32 @@
  // チェインメソッドは
  //   Program<Steps> -> Program<readonly [...Steps, この操作の Step]>
  // と、履歴の末尾に追記する形で型を進化させる。
 -
 -class Program<Steps extends readonly Step[]> {
+-    // 03 と同じ流儀の phantom field。型レベルでのみ存在し、コンパイル後の JS
+-    // からは消える (declare → 実行時には _schedule というプロパティは無い)。
+-    // Steps の追跡はこの 1 行で完結し、構造的型付け上 Program<A> と Program<B>
+-    // は別物として扱われる。
+-    private declare readonly _schedule: Steps;
+-
 -    private constructor(
 -        private readonly data: UserData,
--        private readonly steps: Steps,
+-        // ランタイム用: ただの Step 配列。タプル型としては扱わない。
+-        // _schedule (型レベルの schedule) との対応は append() で保証する。
+-        private readonly steps: readonly Step[],
 -    ) {}
 -
 -    static start(data: UserData): Program<readonly []> {
@@ -59,7 +69,10 @@
 +class Program {
 +    data;
 +    steps;
-+    constructor(data, steps) {
++    constructor(data, 
++    // ランタイム用: ただの Step 配列。タプル型としては扱わない。
++    // _schedule (型レベルの schedule) との対応は append() で保証する。
++    steps) {
 +        this.data = data;
 +        this.steps = steps;
      }
@@ -67,28 +80,42 @@
 +    static start(data) {
 +        return new Program(data, []);
 +    }
-     // ---- 前提なしで呼べる step --------------------------------------------
--
-     // validate は前提なし (= 最初に呼ぶ前提)
--    validate(): Program<readonly [...Steps, ValidateStep]> {
--        const step: ValidateStep = { type: "validate", data: this.data };
--        return new Program(this.data, [...this.steps, step]) as Program<
--            readonly [...Steps, ValidateStep]
--        >;
-+    validate() {
-+        const step = { type: "validate", data: this.data };
+     // すべての step 追加メソッドはこのヘルパに集約。
+     // 戻り側で Program<readonly [...Steps, T]> と型を明示することで、
+     // ランタイムの「ただの push」を型レベルの「タプル末尾追記」に持ち上げる。
+-    private append<T extends Step>(step: T): Program<readonly [...Steps, T]> {
+-        return new Program<readonly [...Steps, T]>(this.data, [...this.steps, step]);
++    append(step) {
 +        return new Program(this.data, [...this.steps, step]);
      }
 -
-     // log は前提なし。中間にいくらでも挟める neutral な step
+     // ---- 前提なしで呼べる step --------------------------------------------
+     //
+     // 各メソッドが「自分の step が何をするか」を fn の中に閉じ込めて push する。
+     // 拡張するときに run() を触る必要はない (= ロジックの所在は step 追加メソッド)。
+-
+-    validate(): Program<readonly [...Steps, ValidateStep]> {
++    validate() {
+         const data = this.data;
+-        return this.append<ValidateStep>({
++        return this.append({
+             type: "validate",
+             fn: async () => {
+                 console.log("[validate]", data.name);
+@@ -131,27 +86,22 @@
+             },
+         });
+     }
+-
 -    log(message: string): Program<readonly [...Steps, LogStep]> {
--        const step: LogStep = { type: "log", message };
--        return new Program(this.data, [...this.steps, step]) as Program<
--            readonly [...Steps, LogStep]
--        >;
+-        return this.append<LogStep>({
 +    log(message) {
-+        const step = { type: "log", message };
-+        return new Program(this.data, [...this.steps, step]);
++        return this.append({
+             type: "log",
+             fn: async () => {
+                 console.log("[log]    ", message);
+             },
+         });
      }
 -
      // ---- 履歴 gate 付きの step --------------------------------------------
@@ -100,42 +127,47 @@
 -    save(
 -        this: Has<Steps, ValidateStep> extends true ? Program<Steps> : never,
 -    ): Program<readonly [...Steps, SaveStep]> {
--        const step: SaveStep = { type: "save", data: this.data };
--        return new Program(this.data, [...this.steps, step]) as Program<
--            readonly [...Steps, SaveStep]
--        >;
 +    save() {
-+        const step = { type: "save", data: this.data };
-+        return new Program(this.data, [...this.steps, step]);
+         const data = this.data;
+-        return this.append<SaveStep>({
++        return this.append({
+             type: "save",
+             fn: async () => {
+                 console.log("[save]   ", data.name);
+@@ -159,13 +109,10 @@
+             },
+         });
      }
 -
      // notify: 履歴に save が「どこかに」あれば呼べる
 -    notify(
 -        this: Has<Steps, SaveStep> extends true ? Program<Steps> : never,
 -    ): Program<readonly [...Steps, NotifyStep]> {
--        const step: NotifyStep = { type: "notify", data: this.data };
--        return new Program(this.data, [...this.steps, step]) as Program<
--            readonly [...Steps, NotifyStep]
--        >;
 +    notify() {
-+        const step = { type: "notify", data: this.data };
-+        return new Program(this.data, [...this.steps, step]);
+         const data = this.data;
+-        return this.append<NotifyStep>({
++        return this.append({
+             type: "notify",
+             fn: async () => {
+                 console.log("[notify] ", data.name);
+@@ -173,57 +120,40 @@
+             },
+         });
      }
 -
      // ---- 実行 --------------------------------------------------------------
-     // .run() は「履歴に notify がある」= 全工程に到達した program だけ呼べる
--    async run(this: Has<Steps, NotifyStep> extends true ? Program<Steps> : never): Promise<void> {
+     // 順序強制は チェイン段階で済んでいる。run は中央 switch を持たず、
+     // 積まれた fn を順に await するだけ。
+-    async run(): Promise<void> {
 +    async run() {
          for (const step of this.steps) {
-             switch (step.type) {
-                 case "validate":
-@@ -161,53 +107,35 @@
+             await step.fn();
          }
      }
  }
 -
  // -----------------------------------------------------------------------------
- // 4) 中間 step を挟んでもチェインが繋がる (= 元の質問の答え)
+ // 4) 中間 step を挟んでもチェインが繋がる
  // -----------------------------------------------------------------------------
 -
  const program = Program.start({ name: "test", age: 30 })
@@ -146,12 +178,11 @@
      .notify(); //                              ← 直前は log だが save は履歴にある → 呼べる
 -
 -// inspector: schedule が型に乗っているのを確認
--type _Schedule = ScheduleOf<typeof program>;
--//   ^? readonly [ValidateStep, LogStep, SaveStep, LogStep, NotifyStep]
--
 -type ScheduleOf<P> = P extends Program<infer Steps> ? Steps : never;
 -type AssertEq<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 -
+-type _Schedule = ScheduleOf<typeof program>;
+-//   ^? readonly [ValidateStep, LogStep, SaveStep, LogStep, NotifyStep]
 -type _Check = AssertEq<_Schedule, readonly [ValidateStep, LogStep, SaveStep, LogStep, NotifyStep]>;
 -void (null as unknown as _Check);
 -
@@ -164,7 +195,7 @@
  await program.run();
 -
  // -----------------------------------------------------------------------------
- // 6) ❌ 型で止まるパターン
+ // 6) ❌ 型で止まるパターン (= 順序強制)
  // -----------------------------------------------------------------------------
 -
  async function _typeOnlyExamples() {
@@ -176,15 +207,10 @@
      // @ts-expect-error  save していない program では notify が呼べない
      Program.start({ name: "x", age: 1 }).validate().notify();
 -
-     // (c) 完成前に run → 履歴に NotifyStep が無いので this: never
-     const partial = Program.start({ name: "x", age: 1 }).validate().save();
-     // @ts-expect-error  notify していない program は run できない
-     await partial.run();
--
-     // (d) ✅ 中間 log を挟んでも save / notify は通る
+     // (c) ✅ 中間 log を挟んでも save / notify は通る (= 履歴 gate の御利益)
      const ok = Program.start({ name: "x", age: 1 })
          .validate()
-@@ -219,7 +147,7 @@
+@@ -235,7 +165,7 @@
      await ok.run();
  }
  void _typeOnlyExamples;

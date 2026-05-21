@@ -9,16 +9,19 @@
 //   07 (Type-State × Effect)       : 順序は型、副作用は Effect
 //
 // このファイルはさらに踏み込み:
-//   - 副作用を即時実行しない (Step というデータに変える ─ Effect.tryPromise 的)
+//   - 副作用は 即時実行しない。各 Step は「自身を実行する関数 fn」を持つ ─
+//     つまり関数を積み上げる (= Effect.tryPromise の最小版)
 //   - これまで積んだ Step を 型レベルのタプル Steps に蓄積する
 //   - 各メソッドは「直前の状態」ではなく「Steps の履歴」で呼び出し可否を判定
-//   - .run() は schedule が完成している場合だけ呼べる
+//   - .run() は積まれた fn をただ順に呼ぶだけ (= 中央 interpreter を持たない)
 //
 // 効くポイント:
-//   ✅ 副作用は Step。`.run()` を呼ぶまで何も起きない (= 遅延実行)
+//   ✅ 副作用は遅延される。`.run()` を呼ぶまで何も起きない
 //   ✅ Hover した瞬間に「これから何が走るか」が タプル型 として全部見える
 //   ✅ Has<Steps, X> で「履歴に X があるか?」を型レベルに問える
 //   ✅ → "validate → log → save" のような中間 Step を挟んでも save が呼べる
+//   ✅ run() の中に switch / dispatcher を書かない。step ごとのロジックは
+//       step 追加メソッドの中で完結する (= 拡張時に run を触らない)
 //
 // 設計上の鍵: なぜ S (直前状態) ではなく Steps (履歴) で gate するか
 //
@@ -45,18 +48,20 @@ type UserData = {
 };
 
 // -----------------------------------------------------------------------------
-// 1) Step 群 ── 副作用の記述データ
+// 1) Step 群 ── 「タグ + 自分自身を実行する関数」
 // -----------------------------------------------------------------------------
 //
-// discriminated union のメンバ。`type` フィールドで何の作用か、残りのフィールド
-// でその作用に必要なペイロードを持つ。.run() の interpreter がこの type で
-// 分岐して、実際の副作用を起こす。
+// discriminator `type` は「Has<Steps, ValidateStep> 的な型レベル検査」用、
+// `fn` は「実行時に呼ばれるクロージャ」。各 step 追加メソッドが fn を組み立てて
+// タプルに push する。run() 側は中央 switch を持たず、fn を順番に呼ぶだけ。
 
-type ValidateStep = { readonly type: "validate"; readonly data: UserData };
-type SaveStep = { readonly type: "save"; readonly data: UserData };
-type NotifyStep = { readonly type: "notify"; readonly data: UserData };
-// ↓ 「中間に挟まる」neutral な step の例 (前提なし、何にも影響しない)
-type LogStep = { readonly type: "log"; readonly message: string };
+type StepFn = () => Promise<void>;
+
+type ValidateStep = { readonly type: "validate"; readonly fn: StepFn };
+type SaveStep = { readonly type: "save"; readonly fn: StepFn };
+type NotifyStep = { readonly type: "notify"; readonly fn: StepFn };
+// ↓ 中間に挟まる neutral な step の例 (前提なし)
+type LogStep = { readonly type: "log"; readonly fn: StepFn };
 type Step = ValidateStep | SaveStep | NotifyStep | LogStep;
 
 // -----------------------------------------------------------------------------
@@ -85,31 +90,55 @@ type Has<Steps extends readonly Step[], T extends Step> =
 // と、履歴の末尾に追記する形で型を進化させる。
 
 class Program<Steps extends readonly Step[]> {
+    // 03 と同じ流儀の phantom field。型レベルでのみ存在し、コンパイル後の JS
+    // からは消える (declare → 実行時には _schedule というプロパティは無い)。
+    // Steps の追跡はこの 1 行で完結し、構造的型付け上 Program<A> と Program<B>
+    // は別物として扱われる。
+    private declare readonly _schedule: Steps;
+
     private constructor(
         private readonly data: UserData,
-        private readonly steps: Steps,
+        // ランタイム用: ただの Step 配列。タプル型としては扱わない。
+        // _schedule (型レベルの schedule) との対応は append() で保証する。
+        private readonly steps: readonly Step[],
     ) {}
 
     static start(data: UserData): Program<readonly []> {
         return new Program<readonly []>(data, []);
     }
 
-    // ---- 前提なしで呼べる step --------------------------------------------
-
-    // validate は前提なし (= 最初に呼ぶ前提)
-    validate(): Program<readonly [...Steps, ValidateStep]> {
-        const step: ValidateStep = { type: "validate", data: this.data };
-        return new Program(this.data, [...this.steps, step]) as Program<
-            readonly [...Steps, ValidateStep]
-        >;
+    // すべての step 追加メソッドはこのヘルパに集約。
+    // 戻り側で Program<readonly [...Steps, T]> と型を明示することで、
+    // ランタイムの「ただの push」を型レベルの「タプル末尾追記」に持ち上げる。
+    private append<T extends Step>(step: T): Program<readonly [...Steps, T]> {
+        return new Program<readonly [...Steps, T]>(this.data, [...this.steps, step]);
     }
 
-    // log は前提なし。中間にいくらでも挟める neutral な step
+    // ---- 前提なしで呼べる step --------------------------------------------
+    //
+    // 各メソッドが「自分の step が何をするか」を fn の中に閉じ込めて push する。
+    // 拡張するときに run() を触る必要はない (= ロジックの所在は step 追加メソッド)。
+
+    validate(): Program<readonly [...Steps, ValidateStep]> {
+        const data = this.data;
+        return this.append<ValidateStep>({
+            type: "validate",
+            fn: async () => {
+                console.log("[validate]", data.name);
+                if (data.name.length === 0 || data.age < 0) {
+                    throw new Error("invalid");
+                }
+            },
+        });
+    }
+
     log(message: string): Program<readonly [...Steps, LogStep]> {
-        const step: LogStep = { type: "log", message };
-        return new Program(this.data, [...this.steps, step]) as Program<
-            readonly [...Steps, LogStep]
-        >;
+        return this.append<LogStep>({
+            type: "log",
+            fn: async () => {
+                console.log("[log]    ", message);
+            },
+        });
     }
 
     // ---- 履歴 gate 付きの step --------------------------------------------
@@ -121,49 +150,42 @@ class Program<Steps extends readonly Step[]> {
     save(
         this: Has<Steps, ValidateStep> extends true ? Program<Steps> : never,
     ): Program<readonly [...Steps, SaveStep]> {
-        const step: SaveStep = { type: "save", data: this.data };
-        return new Program(this.data, [...this.steps, step]) as Program<
-            readonly [...Steps, SaveStep]
-        >;
+        const data = this.data;
+        return this.append<SaveStep>({
+            type: "save",
+            fn: async () => {
+                console.log("[save]   ", data.name);
+                // 本番ならここで await db.insert(data)
+            },
+        });
     }
 
     // notify: 履歴に save が「どこかに」あれば呼べる
     notify(
         this: Has<Steps, SaveStep> extends true ? Program<Steps> : never,
     ): Program<readonly [...Steps, NotifyStep]> {
-        const step: NotifyStep = { type: "notify", data: this.data };
-        return new Program(this.data, [...this.steps, step]) as Program<
-            readonly [...Steps, NotifyStep]
-        >;
+        const data = this.data;
+        return this.append<NotifyStep>({
+            type: "notify",
+            fn: async () => {
+                console.log("[notify] ", data.name);
+                // 本番ならここで await notifier.send(data)
+            },
+        });
     }
 
     // ---- 実行 --------------------------------------------------------------
-    // .run() は「履歴に notify がある」= 全工程に到達した program だけ呼べる
-    async run(this: Has<Steps, NotifyStep> extends true ? Program<Steps> : never): Promise<void> {
+    // 順序強制は チェイン段階で済んでいる。run は中央 switch を持たず、
+    // 積まれた fn を順に await するだけ。
+    async run(): Promise<void> {
         for (const step of this.steps) {
-            switch (step.type) {
-                case "validate":
-                    console.log("[validate]", step.data.name);
-                    if (step.data.name.length === 0 || step.data.age < 0) {
-                        throw new Error("invalid");
-                    }
-                    break;
-                case "save":
-                    console.log("[save]   ", step.data.name);
-                    break;
-                case "notify":
-                    console.log("[notify] ", step.data.name);
-                    break;
-                case "log":
-                    console.log("[log]    ", step.message);
-                    break;
-            }
+            await step.fn();
         }
     }
 }
 
 // -----------------------------------------------------------------------------
-// 4) 中間 step を挟んでもチェインが繋がる (= 元の質問の答え)
+// 4) 中間 step を挟んでもチェインが繋がる
 // -----------------------------------------------------------------------------
 
 const program = Program.start({ name: "test", age: 30 })
@@ -174,12 +196,11 @@ const program = Program.start({ name: "test", age: 30 })
     .notify(); //                              ← 直前は log だが save は履歴にある → 呼べる
 
 // inspector: schedule が型に乗っているのを確認
-type _Schedule = ScheduleOf<typeof program>;
-//   ^? readonly [ValidateStep, LogStep, SaveStep, LogStep, NotifyStep]
-
 type ScheduleOf<P> = P extends Program<infer Steps> ? Steps : never;
 type AssertEq<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 
+type _Schedule = ScheduleOf<typeof program>;
+//   ^? readonly [ValidateStep, LogStep, SaveStep, LogStep, NotifyStep]
 type _Check = AssertEq<_Schedule, readonly [ValidateStep, LogStep, SaveStep, LogStep, NotifyStep]>;
 void (null as unknown as _Check);
 
@@ -191,7 +212,7 @@ console.log("--- run schedule ---");
 await program.run();
 
 // -----------------------------------------------------------------------------
-// 6) ❌ 型で止まるパターン
+// 6) ❌ 型で止まるパターン (= 順序強制)
 // -----------------------------------------------------------------------------
 
 async function _typeOnlyExamples() {
@@ -203,12 +224,7 @@ async function _typeOnlyExamples() {
     // @ts-expect-error  save していない program では notify が呼べない
     Program.start({ name: "x", age: 1 }).validate().notify();
 
-    // (c) 完成前に run → 履歴に NotifyStep が無いので this: never
-    const partial = Program.start({ name: "x", age: 1 }).validate().save();
-    // @ts-expect-error  notify していない program は run できない
-    await partial.run();
-
-    // (d) ✅ 中間 log を挟んでも save / notify は通る
+    // (c) ✅ 中間 log を挟んでも save / notify は通る (= 履歴 gate の御利益)
     const ok = Program.start({ name: "x", age: 1 })
         .validate()
         .log("...")
@@ -233,11 +249,11 @@ void _typeOnlyExamples;
 //     → 前提を満たさないと receiver が never になり、メソッドが「無い」状態に
 //     → 03 の `this: Program<"validated">` の一般化
 //
-// (c) 副作用は Step (データ)。`.run()` の interpreter が初めて実行する
-//     → 「組み立て」と「実行」が分離、test では interpreter を差し替えられる
+// (c) Step が「タグ + fn」。run は fn を呼ぶだけで中央 switch を持たない
+//     → 新しい step を増やしても run() に手を入れる必要がない
+//     → 各 step のロジックは step 追加メソッドの中で閉じる (= local reasoning)
 //
 // (d) 型レベルで Steps を観測できる (件数 / 末尾 / 含むか / 並び順) 全部 type で完結
-//     → "ある条件を満たす schedule しか run できない" を型で書ける
 //
 // -----------------------------------------------------------------------------
 // 8) 限界
@@ -260,8 +276,8 @@ void _typeOnlyExamples;
 // -----------------------------------------------------------------------------
 // 結論:
 //   - "順序制約" + "副作用の遅延実行" + "実行前 schedule 観測" を軽量に欲しいなら、
-//     Steps タプルだけを型に持って、各メソッドは Has<Steps, X> で gate する
-//   - 直前状態 S での gate より柔軟 (中間 step を挟める)
+//     Steps タプルだけを型に持ち、各 step は「タグ + fn」、Has<Steps, X> で gate する
+//   - 中央 interpreter (switch) は要らない。step ごとのロジックは追加メソッド側に
 //   - 直列で本数が決まっているパイプライン (DB migration / build pipeline /
 //     CLI ワークフロー) に fit する
 //   - 汎用副作用システムへ拡張するなら Effect.ts に乗り換える
