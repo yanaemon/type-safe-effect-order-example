@@ -1,0 +1,17 @@
+package-lock.json
+  ai_agent 12,560-566
+src/usecases/kysely.ts
+  ai_agent 1-205
+compiled/usecases/kysely.js
+  ai_agent 1-127
+package.json
+  ai_agent 24,33
+README.md
+  ai_agent 54,81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "be47def7b1316af3d3b58623333e7d8a5a3a8669",
+  "prompts": {}
+}
