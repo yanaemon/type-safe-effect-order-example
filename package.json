@@ -21,6 +21,7 @@
         "run:lib:typestate": "tsx src/libraries/typestate.ts",
         "run:lib:ts-checked-fsm": "tsx src/libraries/ts-checked-fsm.ts",
         "run:usecase:zod": "tsx src/usecases/zod.ts",
+        "run:usecase:kysely": "tsx src/usecases/kysely.ts",
         "diff:gen": "for ts in src/[0-9]*-*.ts; do n=$(basename $ts .ts); diff -u $ts compiled/$n.js > diff/$n.diff || true; done"
     },
     "devDependencies": {
@@ -29,6 +30,7 @@
     },
     "dependencies": {
         "effect": "^3.21.2",
+        "kysely": "^0.29.2",
         "ts-checked-fsm": "^1.1.0",
         "typestate": "^1.0.6",
         "xstate": "^5.31.1",

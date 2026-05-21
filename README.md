@@ -51,6 +51,7 @@ tsconfig.json              ← rootDir=src, outDir=compiled
 | ライブラリ | ファイル | 提供している機能 / 内部で使っている仕組み |
 |---|---|---|
 | zod | [`src/usecases/zod.ts`](src/usecases/zod.ts) | スキーマバリデーション / `$ZodType<Output, Input>` という phantom 型パイプライン (本編 02 の一般化)。`parse()` は `unknown → 検証済み型` への状態遷移、`.brand()` は明示的な phantom タグ |
+| Kysely | [`src/usecases/kysely.ts`](src/usecases/kysely.ts) | 型安全な SQL クエリビルダー / `SelectQueryBuilder<DB, TB, O>` という 3 つの型パラメータをチェインで進化させる builder type-state (本編 03 の一般化)。`.innerJoin()` で TB に集合追加、`.select()` で O に列型を蓄積 |
 
 各ファイルには `@ts-expect-error` 付きの「これは型エラーになる」例も入っている。
 `pnpm typecheck` (or `npm run typecheck`) すれば、`@ts-expect-error` がちゃんと
@@ -77,6 +78,7 @@ pnpm run:lib:typestate      # libraries/typestate.ts
 pnpm run:lib:ts-checked-fsm # libraries/ts-checked-fsm.ts
 
 pnpm run:usecase:zod        # usecases/zod.ts
+pnpm run:usecase:kysely     # usecases/kysely.ts
 
 pnpm diff:gen       # diff/ に src vs compiled の差分スナップショットを再生成
                     # (pnpm build に含まれているので普段は意識しなくて OK)
