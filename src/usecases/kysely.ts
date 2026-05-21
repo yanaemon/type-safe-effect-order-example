@@ -41,6 +41,7 @@
 
 import {
     DummyDriver,
+    type Generated,
     Kysely,
     PostgresAdapter,
     PostgresIntrospector,
@@ -50,15 +51,18 @@ import {
 // -----------------------------------------------------------------------------
 // 1) DB スキーマ宣言 (= Kysely の "Database 型")
 // -----------------------------------------------------------------------------
+//
+// `Generated<T>` は「INSERT 時には任意、SELECT 時には必ず T」という Kysely の
+// マーカー型。これを付けないと INSERT 側の values() で id が必須扱いになる。
 
 interface UserTable {
-    id: number;
+    id: Generated<number>;
     name: string;
     age: number;
 }
 
 interface PostTable {
-    id: number;
+    id: Generated<number>;
     user_id: number;
     title: string;
 }
@@ -112,10 +116,22 @@ type SelectTBOf<T> = T extends { __select_tb__?: infer X }
       InferTB<T>;
 type SelectOOf<T> = T extends { __select_o__?: infer X } ? X : InferO<T>;
 // 実体は SelectQueryBuilder<DB, TB, O> の型引数を取り出すだけ
-type InferTB<T> = T extends import("kysely").SelectQueryBuilder<DB, infer TB, infer _O>
+// (SelectQueryBuilder の第 2 型パラメータは `extends keyof DB` 制約付きなので、
+//  infer 側にも `extends keyof DB` を書いておく必要がある)
+type InferTB<T> = T extends import("kysely").SelectQueryBuilder<
+    DB,
+    infer TB extends keyof DB,
+    infer _O
+>
     ? TB
     : never;
-type InferO<T> = T extends import("kysely").SelectQueryBuilder<DB, infer _TB, infer O> ? O : never;
+type InferO<T> = T extends import("kysely").SelectQueryBuilder<
+    DB,
+    infer _TB extends keyof DB,
+    infer O
+>
+    ? O
+    : never;
 type AssertEq<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 
 // -----------------------------------------------------------------------------
